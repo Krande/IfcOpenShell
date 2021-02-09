@@ -1,5 +1,7 @@
 # Dependency and build folders created by the build scripts
 /deps*/
+/_deps*/
+/_build*/
 /build*/
 /install*/
 /win/BuildDepsCache*.txt
