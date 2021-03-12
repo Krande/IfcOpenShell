@@ -33,14 +33,14 @@ jobs:
         git submodule update
     - name: Config Conda Env
       run: |
-        conda config --set always_yes yes --set changeps1 no && \
-        conda update -q conda && \
-        conda info -a && \
+        conda config --set always_yes yes --set changeps1 no
+        conda update -q conda
+        conda info -a
         conda config --add channels https://conda.anaconda.org/conda-forge
     - name: Create Anaconda env
       run: conda create --yes --quiet --name build_env conda-build=3.16.3 conda-verify libarchive python=3.8 anaconda-client=1.7.2
     - name: Make Conda Package
       run: |
-        source activate build_env && \
-        conda config --set anaconda_upload yes && \
+        source activate build_env
+        conda config --set anaconda_upload yes
         conda build --no-remove-work-dir --dirty --token ${{secrets.CONDATOKEN}} --user krande -c krande conda
