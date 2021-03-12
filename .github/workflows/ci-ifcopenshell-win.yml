@@ -41,4 +41,4 @@ jobs:
     - name: Make Conda Package
       run: |
         conda config --set anaconda_upload yes
-        conda build --no-remove-work-dir --dirty --token ${{secrets.CONDATOKEN}} --user krande -c krande conda
+        conda build --no-remove-work-dir --dirty --token ${{ secrets.CONDA_TOKEN }} --user krande -c krande conda
