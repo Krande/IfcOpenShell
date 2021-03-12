@@ -1,0 +1,51 @@
+name: Publish IfcOpenShell-dev
+
+on: 
+  push:
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: github.repository == 'krande/IfcOpenShell'
+    steps:
+    - run: echo ok go
+
+  build:
+    runs-on: windows-latest
+
+    needs: activate
+    env:
+      IFCOS_INSTALL_PYTHON: TRUE
+      TARGET_ARCH: x64
+    steps:
+
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+      with:
+        python-version: '3.8' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+        architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+    - name: Test Conda on path
+    - run: conda list
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Update Submodules
+      run: |
+        git submodule init
+        git submodule update
+#    - name: Build ifcopenshell
+#      run: |
+#        cd win
+#        build-deps.cmd vs2019-x64 RelWithDebInfo
+#        run-cmake.bat vs2019-x64 -DBoost_NO_BOOST_CMAKE=On
+    - name: Config Conda Env
+      run: |
+        conda config --set always_yes yes --set changeps1 no && \
+        conda update -q conda && \
+        conda info -a && \
+        conda config --add channels https://conda.anaconda.org/conda-forge
+    - name: Create Anaconda env
+      run: conda create --yes --quiet --name build_env conda-build=3.16.3 conda-verify libarchive python=3.8 anaconda-client=1.7.2
+    - name: Make Conda Package
+      run: |
+        source activate build_env && \
+        conda config --set anaconda_upload yes && \
+        conda build --no-remove-work-dir --dirty --token ${{secrets.CONDATOKEN}} --user krande -c krande conda
