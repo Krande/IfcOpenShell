@@ -36,9 +36,9 @@ jobs:
         conda config --set always_yes yes --set changeps1 no
         conda update -q conda
         conda info -a
+        conda install -y -q conda-build conda-verify libarchive anaconda-client
         conda config --add channels https://conda.anaconda.org/conda-forge
-    - name: Create Anaconda env
-      run: conda create --yes --quiet --name build_env conda-build conda-verify libarchive python=3.8 anaconda-client
     - name: Make Conda Package
       run: |
-        activate build_env && conda config --set anaconda_upload yes && conda build --no-remove-work-dir --dirty --token ${{secrets.CONDATOKEN}} --user krande -c krande conda
+        conda config --set anaconda_upload yes
+        conda build --no-remove-work-dir --dirty --token ${{secrets.CONDATOKEN}} --user krande -c krande conda
