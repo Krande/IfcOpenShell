@@ -20,8 +20,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
-    - uses: goanpeca/setup-miniconda@v1
+    - uses: conda-incubator/setup-miniconda@v2
       with:
+        auto-activate-base: true
         auto-update-conda: true
         python-version: 3.8
     - name: Test Conda on path
