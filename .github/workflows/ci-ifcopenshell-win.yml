@@ -41,6 +41,4 @@ jobs:
       run: conda create --yes --quiet --name build_env conda-build conda-verify libarchive python=3.8 anaconda-client
     - name: Make Conda Package
       run: |
-        activate build_env
-        conda config --set anaconda_upload yes
-        conda build --no-remove-work-dir --dirty --token ${{secrets.CONDATOKEN}} --user krande -c krande conda
+        activate build_env && conda config --set anaconda_upload yes && conda build --no-remove-work-dir --dirty --token ${{secrets.CONDATOKEN}} --user krande -c krande conda
