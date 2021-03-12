@@ -38,7 +38,7 @@ jobs:
         conda info -a
         conda config --add channels https://conda.anaconda.org/conda-forge
     - name: Create Anaconda env
-      run: conda create --yes --quiet --name build_env conda-build=3.16.3 conda-verify libarchive python=3.8 anaconda-client=1.7.2
+      run: conda create --yes --quiet --name build_env conda-build conda-verify libarchive python=3.8 anaconda-client
     - name: Make Conda Package
       run: |
         source activate build_env
