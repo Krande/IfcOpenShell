@@ -699,7 +699,11 @@ class IfcImporter:
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
-                self.create_product(self.file.by_id(shape.guid), shape)
+                if shape.context != "Body" and shape.guid in IfcStore.guid_map:
+                    # We only load a single context, and we prioritise the Body context. See #1290.
+                    pass
+                else:
+                    self.create_product(self.file.by_id(shape.guid), shape)
             if not iterator.next():
                 break
         print("Done creating geometry")
@@ -709,6 +713,8 @@ class IfcImporter:
 
     def create_structural_elements(self):
         self.create_curve_products(self.file.by_type("IfcStructuralCurveMember"))
+        self.create_curve_products(self.file.by_type("IfcStructuralCurveConnection"))
+        # self.create_curve_products(self.file.by_type("IfcStructuralPointConnection"))
 
     def create_curve_products(self, products):
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
@@ -720,7 +726,7 @@ class IfcImporter:
             )
         else:
             iterator = ifcopenshell.geom.iterator(
-                self.settings_2d, self.file, include=self.file.by_type("IfcAnnotation")
+                self.settings_2d, self.file, include=products
             )
         valid_file = iterator.initialize()
         if not valid_file:
@@ -1287,7 +1293,9 @@ class IfcImporter:
         elif element.is_a("IfcOpeningElement"):
             self.opening_collection.objects.link(obj)
         else:
-            self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
+            # Avoid watrning for structural analysis entities
+            if "Structural" not in element.is_a(): # TODO test with the list of structural analysis entities
+                self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
             bpy.context.scene.collection.objects.link(obj)
 
     def cast_edge_case_attribute(self, ifc_class, key, value):
