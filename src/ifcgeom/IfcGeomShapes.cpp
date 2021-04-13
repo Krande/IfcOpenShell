@@ -1339,6 +1339,16 @@ namespace {
 		TopTools_IndexedDataMapOfShapeListOfShape map;
 		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
 
+		for (int i = 1; i <= map.Extent(); ++i) {
+			if (map.FindFromIndex(i).Extent() > 2) {
+				Logger::Warning("Self-intersecting Directrix");
+			}
+		}
+
+		std::set<TopoDS_TShape*> seen;
+
+		auto num_edges = IfcGeom::Kernel::count(wire, TopAbs_EDGE);
+
 		TopoDS_Vertex v0, v1;
 		// @todo this creates the ancestor map twice
 		TopExp::Vertices(wire, v0, v1);
@@ -1347,7 +1357,9 @@ namespace {
 
 		// @todo this probably still does not work on a closed wire consisting of one (circular) edge.
 		
-		while (!v0.IsSame(v1) || ignore_first_equality_because_closed) {
+		while (sorted_edges.size() < num_edges && 
+			(!v0.IsSame(v1) || ignore_first_equality_because_closed)) 
+		{
 			ignore_first_equality_because_closed = false;
 			if (!map.Contains(v0)) {
 				throw std::runtime_error("Disconnected vertex");
@@ -1359,10 +1371,11 @@ namespace {
 			for (; it.More(); it.Next()) {
 				const TopoDS_Edge& e = TopoDS::Edge(it.Value());
 				TopExp::Vertices(e, ve0, ve1, true);
-				if (ve0.IsSame(v0)) {
+				if (ve0.IsSame(v0) && seen.find(&*e.TShape()) == seen.end()) {
 					sorted_edges.push_back(e);
 					v0 = ve1;
 					added = true;
+					seen.insert(&*e.TShape());
 					break;
 				}
 			}
