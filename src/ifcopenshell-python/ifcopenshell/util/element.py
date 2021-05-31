@@ -1,3 +1,6 @@
+import ifcopenshell
+
+
 def get_psets(element):
     psets = {}
     try:
@@ -76,10 +79,6 @@ def get_material(element):
     if hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
         for relationship in relating_type.HasAssociations:
             if relationship.is_a("IfcRelAssociatesMaterial"):
-                if relationship.RelatingMaterial.is_a("IfcMaterialLayerSetUsage"):
-                    return relationship.RelatingMaterial.ForLayerSet
-                elif relationship.RelatingMaterial.is_a("IfcMaterialProfileSetUsage"):
-                    return relationship.RelatingMaterial.ForProfileSet
                 return relationship.RelatingMaterial
 
 
@@ -105,24 +104,6 @@ def replace_attribute(element, old, new):
                     element[i] = new_attribute
 
 
-def is_representation_of_context(representation, context, subcontext=None, target_view=None):
-    if target_view is not None:
-        return (
-            representation.ContextOfItems.is_a("IfcGeometricRepresentationSubContext")
-            and representation.ContextOfItems.TargetView == target_view
-            and representation.ContextOfItems.ContextIdentifier == subcontext
-            and representation.ContextOfItems.ContextType == context
-        )
-    elif subcontext is not None:
-        return (
-            representation.ContextOfItems.is_a("IfcGeometricRepresentationSubContext")
-            and representation.ContextOfItems.ContextIdentifier == subcontext
-            and representation.ContextOfItems.ContextType == context
-        )
-    elif representation.ContextOfItems.ContextType == context:
-        return True
-
-
 def remove_deep(ifc_file, element):
     # @todo maybe some sort of try-finally mechanism.
     ifc_file.batch()
@@ -134,12 +115,25 @@ def remove_deep(ifc_file, element):
     ifc_file.unbatch()
 
 
-def get_representation(element, context, subcontext=None, target_view=None):
-    if element.is_a("IfcProduct") and element.Representation:
-        for r in element.Representation.Representations:
-            if is_representation_of_context(r, context, subcontext, target_view):
-                return r
-    elif element.is_a("IfcTypeProduct") and element.RepresentationMaps:
-        for r in element.RepresentationMaps:
-            if is_representation_of_context(r.MappedRepresentation, context, subcontext, target_view):
-                return r.MappedRepresentation
+def copy(ifc_file, element):
+    new = ifc_file.create_entity(element.is_a())
+    for i, attribute in enumerate(element):
+        if attribute is None:
+            continue
+        new[i] = attribute
+    return new
+
+
+def copy_deep(ifc_file, element):
+    new = ifc_file.create_entity(element.is_a())
+    for i, attribute in enumerate(element):
+        if attribute is None:
+            continue
+        if isinstance(attribute, ifcopenshell.entity_instance):
+            attribute = copy_deep(ifc_file, attribute)
+        elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
+            attribute = list(attribute)
+            for j, item in enumerate(attribute):
+                attribute[j] = copy_deep(ifc_file, item)
+        new[i] = attribute
+    return new

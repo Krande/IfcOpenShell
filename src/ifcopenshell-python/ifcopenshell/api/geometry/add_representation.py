@@ -1,8 +1,12 @@
 import bpy
 import bmesh
 import ifcopenshell.util.unit
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from blenderbim.bim.module.geometry.helper import Helper
+
+Z_AXIS = Vector((0, 0, 1))
+X_AXIS = Vector((1, 0, 0))
+EPSILON = 1e-6
 
 
 class Usecase:
@@ -33,7 +37,10 @@ class Usecase:
             self.settings[key] = value
 
     def execute(self):
-        if isinstance(self.settings["geometry"], bpy.types.Mesh):
+        if (
+            isinstance(self.settings["geometry"], bpy.types.Mesh)
+            and self.settings["geometry"] == self.settings["blender_object"].data
+        ):
             self.evaluate_geometry()
         if self.settings["unit_scale"] is None:
             self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
@@ -42,36 +49,48 @@ class Usecase:
         elif self.settings["context"].ContextType == "Plan":
             return self.create_plan_representation()
         return self.create_variable_representation()
-
-    def evaluate_geometry(self):
-        self.boolean_modifiers = []
-        for modifier in self.settings["blender_object"].modifiers:
-            if not modifier.type == "BOOLEAN":
-                continue
-            modifier_data = {}
-            for name in ["operation", "operand_type", "object", "solver", "use_self"]:
-                modifier_data[name] = getattr(modifier, name)
-            self.boolean_modifiers.append(modifier_data)
-            self.settings["blender_object"].modifiers.remove(modifier)
-
-        if self.settings["should_force_triangulation"]:
-            mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
-            bm = bmesh.new()
-            bm.from_mesh(mesh)
-            bmesh.ops.triangulate(bm, faces=bm.faces)
-            bm.to_mesh(mesh)
-            bm.free()
-            del bm
-            self.settings["geometry"] = mesh
+    
+    def should_triangulate_face(self, face, threshold=EPSILON):
+        vz = face.normal
+        co = face.verts[0].co
+        if vz.length < 0.5:
+            return True
+        if abs(vz.z) < 0.5:
+            vx = vz.cross(Z_AXIS)
         else:
-            self.settings["geometry"] = (
-                self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
-            )
+            vx = vz.cross(X_AXIS)
+        vy = vx.cross(vz)
+        tM = Matrix([
+            [vx.x, vy.x, vz.x, co.x],
+            [vx.y, vy.y, vz.y, co.y],
+            [vx.z, vy.z, vz.z, co.z],
+            [0, 0, 0, 1]
+        ]).inverted()
 
-        for modifier in self.boolean_modifiers:
-            new = self.settings["blender_object"].modifiers.new("IfcOpeningElement", "BOOLEAN")
-            for key, value in modifier.items():
-                setattr(new, key, value)
+        return any([abs((tM @ v.co).z) > threshold  for v in face.verts])
+    
+    def evaluate_geometry(self):
+        for modifier in self.settings["blender_object"].modifiers:
+            if modifier.type == "BOOLEAN":
+                modifier.show_viewport = False
+
+        mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        if self.settings["should_force_triangulation"]:
+            faces = bm.faces
+        else:
+            faces = [f for f in bm.faces if self.should_triangulate_face(f)]
+        bmesh.ops.triangulate(bm, faces=faces)
+        bm.to_mesh(mesh)
+        bm.free()
+        del bm
+
+        self.settings["geometry"] = mesh
+
+        for modifier in self.settings["blender_object"].modifiers:
+            if modifier.type == "BOOLEAN":
+                modifier.show_viewport = True
 
     def create_model_representation(self):
         if self.settings["context"].is_a() == "IfcGeometricRepresentationContext":
@@ -97,6 +116,8 @@ class Usecase:
             return self.create_curve3d_representation()
         elif self.settings["context"].ContextIdentifier == "SurveyPoints":
             return self.create_geometric_curve_set_representation()
+        elif self.settings["context"].ContextIdentifier == "Lighting":
+            return self.create_lighting_representation()
 
     def create_plan_representation(self):
         if self.settings["context"].ContextIdentifier == "Annotation":
@@ -125,11 +146,68 @@ class Usecase:
         elif self.settings["context"].ContextIdentifier == "SurveyPoints":
             pass
 
+    def create_lighting_representation(self):
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "LightSource",
+            [self.create_light_source()],
+        )
+
+    def create_light_source(self):
+        if self.settings["geometry"].type == "POINT":
+            return self.create_light_source_positional()
+
+    def create_light_source_positional(self):
+        return self.file.create_entity(
+            "IfcLightSourcePositional",
+            **{
+                "LightColour": self.file.createIfcColourRgb(None, *self.settings["geometry"].color),
+                "Position": self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+                "Radius": self.convert_si_to_unit(self.settings["geometry"].shadow_soft_size),
+            },
+        )
+
+    def create_text_representation(self):
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Annotation2D",
+            [self.create_text()],
+        )
+
+    def create_text(self):
+        text = self.settings["geometry"]
+        if text.align_y in ["TOP_BASELINE", "BOTTOM_BASELINE", "BOTTOM"]:
+            y = "bottom"
+        elif text.align_y == "CENTER":
+            y = "middle"
+        elif text.align_y == "TOP":
+            y = "top"
+
+        if text.align_x == "LEFT":
+            x = "left"
+        elif text.align_x == "CENTER":
+            x = "middle"
+        elif text.align_x == "RIGHT":
+            x = "right"
+
+        origin = self.file.createIfcAxis2Placement3D(
+            self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+            self.file.createIfcDirection((0.0, 0.0, 1.0)),
+            self.file.createIfcDirection((1.0, 0.0, 0.0)),
+        )
+
+        # TODO: Planar extent right now is wrong ...
+        return self.file.createIfcTextLiteralWithExtent(
+            text.body, origin, "RIGHT", self.file.createIfcPlanarExtent(1000, 1000), f"{y}-{x}"
+        )
+
     def create_variable_representation(self):
         if self.settings["is_wireframe"]:
             return self.create_wireframe_representation()
         elif self.settings["is_curve"]:
-            return self.create_curve_representation()
+            return self.create_curve3d_representation()
         elif self.settings["is_point_cloud"]:
             return self.create_point_cloud_representation()
         elif isinstance(self.settings["geometry"], bpy.types.Camera):
@@ -164,7 +242,7 @@ class Usecase:
                 "XLength": self.convert_si_to_unit(width),
                 "YLength": self.convert_si_to_unit(height),
                 "ZLength": self.convert_si_to_unit(self.settings["geometry"].clip_end),
-            }
+            },
         )
 
         return self.file.createIfcShapeRepresentation(
@@ -186,6 +264,14 @@ class Usecase:
             self.settings["context"].ContextIdentifier,
             "Curve3D",
             self.create_curves(),
+        )
+    
+    def create_curve2d_representation(self):
+        return self.file.createIfcShapeRepresentation(
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Curve2D",
+            self.create_curves(is_2d=True),
         )
 
     def create_curves(self, is_2d=False):
@@ -223,7 +309,7 @@ class Usecase:
     def create_curves_from_mesh_ifc2x3(self, is_2d=False):
         curves = []
         points = [
-            self.create_cartesian_point(v.co.x, v.co.y, v.co.z if is_2d else None)
+            self.create_cartesian_point(v.co.x, v.co.y, v.co.z if not is_2d else None)
             for v in self.settings["geometry"].vertices
         ]
         coord_list = [p.Coordinates for p in points]

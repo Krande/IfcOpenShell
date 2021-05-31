@@ -1,10 +1,10 @@
-import blenderbim.bim.schema  # TODO: refactor
+import ifcopenshell
 
 
 class Usecase:
     def __init__(self, file, **settings):
         self.file = file
-        self.settings = {"qto": None, "Name": None, "Properties": {}}
+        self.settings = {"qto": None, "name": None, "properties": {}}
         for key, value in settings.items():
             self.settings[key] = value
 
@@ -16,27 +16,29 @@ class Usecase:
         self.extend_qto_with_new_properties(new_properties)
 
     def update_qto_name(self):
-        if self.settings["Name"]:
-            self.settings["qto"].Name = self.settings["Name"]
+        if self.settings["name"]:
+            self.settings["qto"].Name = self.settings["name"]
 
     def load_qto_template(self):
-        self.qto_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(self.settings["qto"].Name)
+        # TODO: add IFC2X3 PsetQto template support
+        self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
+        self.qto_template = self.psetqto.get_by_name(self.settings["qto"].Name)
 
     def update_existing_properties(self):
         for prop in self.settings["qto"].Quantities or []:
             self.update_existing_property(prop)
 
     def update_existing_property(self, prop):
-        if prop.Name not in self.settings["Properties"]:
+        if prop.Name not in self.settings["properties"]:
             return
-        value = self.settings["Properties"][prop.Name]
+        value = self.settings["properties"][prop.Name]
         if prop.is_a("IfcPhysicalSimpleQuantity"):
             prop[3] = float(value) if value else None
-        del self.settings["Properties"][prop.Name]
+        del self.settings["properties"][prop.Name]
 
     def add_new_properties(self):
         properties = []
-        for name, value in self.settings["Properties"].items():
+        for name, value in self.settings["properties"].items():
             if value is None:
                 continue
             property_type = self.get_canonical_property_type(name)

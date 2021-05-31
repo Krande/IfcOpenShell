@@ -1,26 +1,32 @@
 import bpy
 import json
 import addon_utils
-import blenderbim.bim.decoration as decoration
 import ifcopenshell.api.owner.settings
 from bpy.app.handlers import persistent
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.api.attribute.data import Data as AttributeData
+from ifcopenshell.api.type.data import Data as TypeData
+
+
+global_subscription_owner = object()
 
 
 def mode_callback(obj, data):
-    for obj in bpy.context.selected_objects:
+    for obj in bpy.context.selected_objects + [bpy.context.active_object]:
         if (
             obj.mode != "EDIT"
             or not obj.data
-            or not isinstance(obj.data, bpy.types.Mesh)
-            or not obj.data.BIMMeshProperties.ifc_definition_id
+            or not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve, bpy.types.TextCurve))
+            or not obj.BIMObjectProperties.ifc_definition_id
             or not bpy.context.scene.BIMProjectProperties.is_authoring
         ):
             return
-        representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        if representation.RepresentationType == "Tessellation" or representation.RepresentationType == "Brep":
-            IfcStore.edited_objs.add(obj.name)
+        if obj.data.BIMMeshProperties.ifc_definition_id:
+            representation = IfcStore.get_file().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            if representation.RepresentationType in ["Tessellation", "Brep", "Annotation2D"]:
+                IfcStore.edited_objs.add(obj)
+        elif IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).is_a("IfcGridAxis"):
+            IfcStore.edited_objs.add(obj)
 
 
 def name_callback(obj, data):
@@ -33,8 +39,29 @@ def name_callback(obj, data):
     if element.is_a("IfcSpatialStructureElement") or (hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy):
         collection = obj.users_collection[0]
         collection.name = obj.name
+    if element.is_a("IfcGrid"):
+        axis_obj = IfcStore.id_map[element.UAxes[0].id()]
+        axis_collection = axis_obj.users_collection[0]
+        grid_collection = None
+        for collection in bpy.data.collections:
+            if axis_collection.name in collection.children.keys():
+                grid_collection = collection
+                break
+        if grid_collection:
+            grid_collection.name = obj.name
+    if element.is_a("IfcTypeProduct"):
+        TypeData.purge()
     element.Name = "/".join(obj.name.split("/")[1:])
     AttributeData.load(IfcStore.get_file(), obj.BIMObjectProperties.ifc_definition_id)
+
+
+def active_object_callback():
+    obj = bpy.context.active_object
+    for obj in bpy.context.selected_objects:
+        if not obj.BIMObjectProperties.ifc_definition_id:
+            continue
+        if IfcStore.id_map[obj.BIMObjectProperties.ifc_definition_id] != obj:
+            bpy.ops.bim.copy_class(obj=obj.name)
 
 
 def subscribe_to(object, data_path, callback):
@@ -72,6 +99,8 @@ def purge_module_data():
 def loadIfcStore(scene):
     IfcStore.purge()
     ifc_file = IfcStore.get_file()
+    if not ifc_file:
+        return
     IfcStore.get_schema()
     [
         IfcStore.link_element(ifc_file.by_id(o.BIMObjectProperties.ifc_definition_id), o)
@@ -158,6 +187,11 @@ def create_application_organisation(ifc):
 
 @persistent
 def setDefaultProperties(scene):
+    global global_subscription_owner
+    active_object_key = bpy.types.LayerObjects, "active"
+    bpy.msgbus.subscribe_rna(
+        key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
+    )
     ifcopenshell.api.owner.settings.get_person = (
         lambda ifc: ifc.by_id(int(bpy.context.scene.BIMOwnerProperties.user_person))
         if bpy.context.scene.BIMOwnerProperties.user_person
@@ -236,12 +270,3 @@ def setDefaultProperties(scene):
         drawing_style.name = "Blender Default"
         drawing_style.render_type = "DEFAULT"
         bpy.ops.bim.save_drawing_style(index="2")
-
-
-@persistent
-def toggleDecorationsOnLoad(*args):
-    toggle = bpy.context.scene.DocProperties.should_draw_decorations
-    if toggle:
-        decoration.DecorationsHandler.install(bpy.context)
-    else:
-        decoration.DecorationsHandler.uninstall()
