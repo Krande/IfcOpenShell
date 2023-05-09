@@ -31,6 +31,17 @@ cmake_policy(SET CMP0086 NEW)
 # use extra version to make pre-release using eg semver
 set( EXTRA_VERSION "-alpha.3")
 
+# Include the 'convert_env_var_to_bool' and 'get_all_option_flags' functions
+include("functions.cmake")
+
+# Get a list of all OPTION flags from the CMakeLists.txt
+get_all_option_flags(option_flags)
+
+# Loop through the list of OPTION flags and convert the corresponding environment variables
+foreach(option_flag IN LISTS option_flags)
+    convert_env_var_to_bool("${option_flag}")
+endforeach()
+
 foreach(max_year RANGE 2014 2030)
 set(max_sdk "$ENV{ADSK_3DSMAX_SDK_${max_year}}")
 if (NOT "${max_sdk}" STREQUAL "")
@@ -63,6 +74,7 @@ OPTION(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OF
 endif()
 OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 OPTION(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
+OPTION(CONDA_BUILD "Build for conda" OFF)
 
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
@@ -117,6 +129,8 @@ if (BUILD_SHARED_LIBS)
     endif()
     set(IFCOPENSHELL_LIBRARY_DIR "${LIBDIR}")
 endif()
+
+
 
 # Create cache entries if absent for environment variables
 MACRO(UNIFY_ENVVARS_AND_CACHE VAR)
@@ -506,31 +520,41 @@ if(NOT MINIMAL_BUILD AND HDF5_SUPPORT)
 
         ELSE()
             MESSAGE(STATUS "Packaging hdf5 and zlib for conda distribution")
+            set(HDF5_LIBRARIES)
             if (WIN32)
                 # Windows
-                set(zlib_post zlib)
-                set(lib_ext lib)
+                find_package(HDF5 COMPONENTS CXX)
+                if(HDF5_FOUND)
+                    message(STATUS "HDF5 found")
+                    include_directories(${HDF5_INCLUDE_DIRS})
+                    add_definitions(${HDF5_DEFINITIONS})
+                endif()
+                set(HDF5_LIBRARIES ${HDF5_CXX_LIBRARIES})
+                list(APPEND HDF5_LIBRARIES
+                        "${HDF5_LIBRARY_DIR}/zlib.lib"
+                        )
             elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                 # macOS
-                set(zlib_post libz)
-                set(lib_ext dylib)
+                list(APPEND HDF5_LIBRARIES
+                        "${HDF5_LIBRARY_DIR}/libhdf5_cpp.dylib"
+                        "${HDF5_LIBRARY_DIR}/libhdf5.dylib"
+                        "${HDF5_LIBRARY_DIR}/libz.dylib"
+                        )
             else()
-                # linux
-                set(zlib_post libz)
-                set(lib_ext so)
+                # Linux
+                list(APPEND HDF5_LIBRARIES
+                        "${HDF5_LIBRARY_DIR}/libhdf5_cpp.so"
+                        "${HDF5_LIBRARY_DIR}/libhdf5.so"
+                        "${HDF5_LIBRARY_DIR}/libz.so"
+                        )
             endif()
-
-            SET(HDF5_LIBRARIES
-                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
-                    "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
-                    "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
-                    )
         endif()
 
     endif()
 
     if (NOT HDF5_LIBRARIES)
     	# debian default
+        message(STATUS "Using default HDF5 paths")
 
         SET(HDF5_LIBRARIES
             /usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5_cpp.so
