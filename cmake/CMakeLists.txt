@@ -31,6 +31,17 @@ cmake_policy(SET CMP0086 NEW)
 # use extra version to make pre-release using eg semver
 set( EXTRA_VERSION "-alpha.3")
 
+# Include the 'convert_env_var_to_bool' and 'get_all_option_flags' functions
+include("functions.cmake")
+
+# Get a list of all OPTION flags from the CMakeLists.txt
+get_all_option_flags(option_flags)
+
+# Loop through the list of OPTION flags and convert the corresponding environment variables
+foreach(option_flag IN LISTS option_flags)
+    convert_env_var_to_bool("${option_flag}")
+endforeach()
+
 foreach(max_year RANGE 2014 2030)
 set(max_sdk "$ENV{ADSK_3DSMAX_SDK_${max_year}}")
 if (NOT "${max_sdk}" STREQUAL "")
