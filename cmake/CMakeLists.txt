@@ -524,7 +524,6 @@ if (NOT MINIMAL_BUILD AND HDF5_SUPPORT)
                 # Windows
                 find_package(HDF5 COMPONENTS CXX)
                 if (HDF5_FOUND)
-                    message(STATUS "HDF5 found")
                     include_directories(${HDF5_INCLUDE_DIRS})
                     add_definitions(${HDF5_DEFINITIONS})
                 endif ()
