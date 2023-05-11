@@ -30,8 +30,6 @@ cmake -G "Ninja" ^
  -D HDF5_INCLUDE_DIR="%LIBRARY_PREFIX%\include" ^
  -D HDF5_LIBRARY_DIR="%LIBRARY_PREFIX%\lib" ^
  -D JSON_INCLUDE_DIR="%LIBRARY_PREFIX%\include" ^
- -D Boost_LIBRARYDIR:FILEPATH="%LIBRARY_PREFIX%\lib" ^
- -D Boost_INCLUDEDIR:FILEPATH="%LIBRARY_PREFIX%\include" ^
  %SRC_DIR%/cmake
 
 if errorlevel 1 exit 1

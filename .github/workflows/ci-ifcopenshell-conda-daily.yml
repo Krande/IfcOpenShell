@@ -81,6 +81,8 @@ jobs:
             python=${{ matrix.pyver.distver }}
 
       - name: build & test ifcopenshell
+        env:
+          USE_CCACHE: ON
         run: |
           mamba mambabuild . --python ${{ matrix.pyver.distver }} -c conda-forge
         working-directory: ./conda
