@@ -18,7 +18,7 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell'
+      github.repository == 'Krande/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
@@ -34,18 +34,25 @@ jobs:
       fail-fast: false
       matrix:
         pyver: [
-          { name: py310, distver: '3.10'},
+#          { name: py310, distver: '3.10'},
           { name: py311, distver: '3.11'}
         ]
         platform: [
           { name: Windows, distver: windows-2022, upload: 'true' },
-          { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
-          { name: macOS, distver: macos-12, upload: 'true' }
+#          { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
+#          { name: macOS, distver: macos-12, upload: 'true' }
         ]
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+      - name: Cache ccache files
+        uses: actions/cache@v2
+        with:
+          path: ~/.ccache
+          key: ${{ matrix.platform.name }}-ccache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
       - name: Download MacOSX SDK
         if: ${{ matrix.platform.name == 'macOS' }}
         run: |
@@ -53,7 +60,16 @@ jobs:
           tar xf MacOSX10.13.sdk.tar.xz && \
           sudo mv -v MacOSX10.13.sdk /opt/ && \
           ls /opt/
-      - uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Install ninja
+        run: |
+          if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            sudo apt-get install ninja-build
+          elif [[ "$OSTYPE" == "darwin"* ]]; then
+            brew install ninja
+          elif [[ "$OSTYPE" == "win32" ]]; then
+            choco install ninja
+          fi
+
       - uses: mamba-org/provision-with-micromamba@main # https://github.com/mamba-org/provision-with-micromamba
         with:
           channels: conda-forge
@@ -61,13 +77,8 @@ jobs:
           environment-file: conda/environment.yml
           extra-specs: |
             python=${{ matrix.pyver.distver }}
-      - name: build, test and upload ifcopenshell
-        if: ${{ matrix.platform.upload == 'true' }}
-        run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell
-        working-directory: ./conda
+
       - name: build & test ifcopenshell
-        if: ${{ matrix.platform.upload == 'false' }}
         run: |
           conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge
         working-directory: ./conda

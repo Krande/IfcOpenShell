@@ -42,6 +42,8 @@ foreach(option_flag IN LISTS option_flags)
     convert_env_var_to_bool("${option_flag}")
 endforeach()
 
+
+
 foreach(max_year RANGE 2014 2030)
 set(max_sdk "$ENV{ADSK_3DSMAX_SDK_${max_year}}")
 if (NOT "${max_sdk}" STREQUAL "")
@@ -74,6 +76,16 @@ OPTION(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OF
 endif()
 OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 OPTION(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
+OPTION(CONDA_BUILD "Build for conda" OFF)
+OPTION(USE_CCACHE "Use ccache if available" OFF)
+
+if (USE_CCACHE)
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    message(STATUS "ccache found: ${CCACHE_PROGRAM}")
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+endif()
+endif (USE_CCACHE)
 
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
@@ -517,25 +529,33 @@ if(NOT MINIMAL_BUILD AND HDF5_SUPPORT)
 
         ELSE()
             MESSAGE(STATUS "Packaging hdf5 and zlib for conda distribution")
+            set(HDF5_LIBRARIES)
             if (WIN32)
                 # Windows
-                set(zlib_post zlib)
-                set(lib_ext lib)
-            elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+                find_package(HDF5 COMPONENTS CXX)
+                if (HDF5_FOUND)
+                    include_directories(${HDF5_INCLUDE_DIRS})
+                    add_definitions(${HDF5_DEFINITIONS})
+                endif ()
+                set(HDF5_LIBRARIES ${HDF5_CXX_LIBRARIES})
+                list(APPEND HDF5_LIBRARIES
+                        "${HDF5_LIBRARY_DIR}/zlib.lib"
+                        )
+            elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                 # macOS
-                set(zlib_post libz)
-                set(lib_ext dylib)
-            else()
-                # linux
-                set(zlib_post libz)
-                set(lib_ext so)
-            endif()
-
-            SET(HDF5_LIBRARIES
-                    "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
-                    "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
-                    "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
-                    )
+                list(APPEND HDF5_LIBRARIES
+                        "${HDF5_LIBRARY_DIR}/libhdf5_cpp.dylib"
+                        "${HDF5_LIBRARY_DIR}/libhdf5.dylib"
+                        "${HDF5_LIBRARY_DIR}/libz.dylib"
+                        )
+            else ()
+                # Linux
+                list(APPEND HDF5_LIBRARIES
+                        "${HDF5_LIBRARY_DIR}/libhdf5_cpp.so"
+                        "${HDF5_LIBRARY_DIR}/libhdf5.so"
+                        "${HDF5_LIBRARY_DIR}/libz.so"
+                        )
+            endif ()
         endif()
 
     endif()
