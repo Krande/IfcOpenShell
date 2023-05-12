@@ -48,7 +48,7 @@ jobs:
           submodules: recursive
 
       - name: Cache ccache files
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.ccache
           key: ${{ matrix.platform.name }}-ccache-${{ github.sha }}
