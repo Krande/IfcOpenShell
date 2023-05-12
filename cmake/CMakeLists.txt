@@ -530,29 +530,25 @@ if(NOT MINIMAL_BUILD AND HDF5_SUPPORT)
         ELSE()
             MESSAGE(STATUS "Packaging hdf5 and zlib for conda distribution")
             set(HDF5_LIBRARIES)
+            find_package(HDF5 COMPONENTS CXX)
+            if (HDF5_FOUND)
+                include_directories(${HDF5_INCLUDE_DIRS})
+                add_definitions(${HDF5_DEFINITIONS})
+            endif ()
+            set(HDF5_LIBRARIES ${HDF5_CXX_LIBRARIES})
             if (WIN32)
                 # Windows
-                find_package(HDF5 COMPONENTS CXX)
-                if (HDF5_FOUND)
-                    include_directories(${HDF5_INCLUDE_DIRS})
-                    add_definitions(${HDF5_DEFINITIONS})
-                endif ()
-                set(HDF5_LIBRARIES ${HDF5_CXX_LIBRARIES})
                 list(APPEND HDF5_LIBRARIES
                         "${HDF5_LIBRARY_DIR}/zlib.lib"
                         )
             elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                 # macOS
                 list(APPEND HDF5_LIBRARIES
-                        "${HDF5_LIBRARY_DIR}/libhdf5_cpp.dylib"
-                        "${HDF5_LIBRARY_DIR}/libhdf5.dylib"
                         "${HDF5_LIBRARY_DIR}/libz.dylib"
                         )
             else ()
                 # Linux
                 list(APPEND HDF5_LIBRARIES
-                        "${HDF5_LIBRARY_DIR}/libhdf5_cpp.so"
-                        "${HDF5_LIBRARY_DIR}/libhdf5.so"
                         "${HDF5_LIBRARY_DIR}/libz.so"
                         )
             endif ()

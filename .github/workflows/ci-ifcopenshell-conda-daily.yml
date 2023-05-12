@@ -46,14 +46,14 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-
-      - name: Cache ccache files
-        uses: actions/cache@v3
-        with:
-          path: ~/.ccache
-          key: ${{ matrix.platform.name }}-ccache-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-ccache-
+#
+#      - name: Cache ccache files
+#        uses: actions/cache@v3
+#        with:
+#          path: ~/.ccache
+#          key: ${{ matrix.platform.name }}-ccache-${{ github.sha }}
+#          restore-keys: |
+#            ${{ runner.os }}-ccache-
 
       - name: Download MacOSX SDK
         if: ${{ matrix.platform.name == 'macOS' }}
@@ -62,6 +62,7 @@ jobs:
           tar xf MacOSX10.13.sdk.tar.xz && \
           sudo mv -v MacOSX10.13.sdk /opt/ && \
           ls /opt/
+
       - name: Install ninja
         run: |
           if [[ "$OSTYPE" == "linux-gnu"* ]]; then
@@ -81,8 +82,8 @@ jobs:
             python=${{ matrix.pyver.distver }}
 
       - name: build & test ifcopenshell
-        env:
-          USE_CCACHE: ON
+#        env:
+#          USE_CCACHE: ON
         run: |
           mamba mambabuild . --python ${{ matrix.pyver.distver }} -c conda-forge
         working-directory: ./conda
