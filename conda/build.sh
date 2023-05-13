@@ -1,17 +1,5 @@
 #!/bin/bash
 
-declare -a CMAKE_PLATFORM_FLAGS
-
-if [[ ${HOST} =~ .*linux.* ]]; then
-    CMAKE_PLATFORM_FLAGS+=(-DCMAKE_TOOLCHAIN_FILE=$RECIPE_DIR/cross-linux.cmake)
-fi
-
-if [ `uname` == Darwin ]; then
-  export CFLAGS="$CFLAGS   -Wl,-flat_namespace,-undefined,suppress"
-  export CXXFLAGS="$CXXFLAGS -Wl,-flat_namespace,-undefined,suppress"
-  export LDFLAGS="$LDFLAGS  -Wl,-flat_namespace,-undefined,suppress"
-fi
-
 cmake -G Ninja \
  -DCMAKE_BUILD_TYPE=Release \
  -DBUILD_CONVERT:BOOL=ON \
@@ -25,7 +13,6 @@ cmake -G Ninja \
  -DIFCXML_SUPPORT:BOOL=ON \
  -DBOOST_USE_STATIC_LIBS:BOOL=OFF \
  -DCMAKE_INSTALL_PREFIX=$PREFIX \
-  ${CMAKE_PLATFORM_FLAGS[@]} \
  -DCMAKE_PREFIX_PATH=$PREFIX \
  -DCMAKE_SYSTEM_PREFIX_PATH=$PREFIX \
  -DPYTHON_EXECUTABLE:FILEPATH=$PYTHON \
