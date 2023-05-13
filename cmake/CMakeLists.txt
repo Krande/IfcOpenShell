@@ -532,17 +532,24 @@ if(NOT MINIMAL_BUILD AND HDF5_SUPPORT)
             set(HDF5_LIBRARIES)
             find_package(HDF5 COMPONENTS CXX)
             if (HDF5_FOUND)
+                if (HDF5_VERSION VERSION_GREATER_EQUAL "1.12")
+                    message(STATUS "HDF5 version 1.12 or greater found")
+                else ()
+                    message(STATUS "HDF5 version 1.12 or greater not found")
+                endif ()
                 include_directories(${HDF5_INCLUDE_DIRS})
                 add_definitions(${HDF5_DEFINITIONS})
+
             endif ()
-            set(HDF5_LIBRARIES ${HDF5_CXX_LIBRARIES})
             if (WIN32)
                 # Windows
+                set(HDF5_LIBRARIES ${HDF5_CXX_LIBRARIES})
                 list(APPEND HDF5_LIBRARIES
                         "${HDF5_LIBRARY_DIR}/zlib.lib"
                         )
             elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                 # macOS
+                set(HDF5_LIBRARIES ${HDF5_CXX_LIBRARIES})
                 list(APPEND HDF5_LIBRARIES
                         "${HDF5_LIBRARY_DIR}/libz.dylib"
                         )
