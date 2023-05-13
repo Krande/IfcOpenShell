@@ -39,8 +39,8 @@ jobs:
         ]
         platform: [
           { name: Windows, distver: windows-2022, upload: 'true' },
-#          { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
-#          { name: macOS, distver: macos-12, upload: 'true' }
+          { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
+          { name: macOS, distver: macos-12, upload: 'true' }
         ]
     steps:
       - uses: actions/checkout@v3
