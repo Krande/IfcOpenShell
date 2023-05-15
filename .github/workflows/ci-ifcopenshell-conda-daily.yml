@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-#
+
 #      - name: Cache ccache files
 #        uses: actions/cache@v3
 #        with:
@@ -55,13 +55,13 @@ jobs:
 #          restore-keys: |
 #            ${{ runner.os }}-ccache-
 
-      - name: Download MacOSX SDK
-        if: ${{ matrix.platform.name == 'macOS' }}
-        run: |
-          curl -o MacOSX10.13.sdk.tar.xz -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz && \
-          tar xf MacOSX10.13.sdk.tar.xz && \
-          sudo mv -v MacOSX10.13.sdk /opt/ && \
-          ls /opt/
+#      - name: Download MacOSX SDK
+#        if: ${{ matrix.platform.name == 'macOS' }}
+#        run: |
+#          curl -o MacOSX10.13.sdk.tar.xz -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz && \
+#          tar xf MacOSX10.13.sdk.tar.xz && \
+#          sudo mv -v MacOSX10.13.sdk /opt/ && \
+#          ls /opt/
 
       - name: Install ninja
         run: |
