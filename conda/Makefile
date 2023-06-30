@@ -4,5 +4,5 @@ compile:
 debug:
 	conda activate conda-build && conda-debug -c conda-forge . --python 3.10.4
 
-env:
-	conda env update --f environment.yml --prune
+dev:
+	conda env update --f environment.build.yml --prune

@@ -54,20 +54,18 @@ jobs:
           sudo mv -v MacOSX10.13.sdk /opt/ && \
           ls /opt/
       - uses: seanmiddleditch/gha-setup-ninja@master
-      - uses: mamba-org/provision-with-micromamba@main # https://github.com/mamba-org/provision-with-micromamba
+      - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
         with:
-          channels: conda-forge
-          channel-priority: strict
-          environment-file: conda/environment.yml
-          extra-specs: |
+          environment-file: conda/environment.build.yml
+          create-args: >-
             python=${{ matrix.pyver.distver }}
       - name: build, test and upload ifcopenshell
         if: ${{ matrix.platform.upload == 'true' }}
         run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell
+          boa build . --python ${{ matrix.pyver.distver }} --token ${{ secrets.ANACONDA_TOKEN }} --user ifcopenshell
         working-directory: ./conda
       - name: build & test ifcopenshell
         if: ${{ matrix.platform.upload == 'false' }}
         run: |
-          conda-build . --python ${{ matrix.pyver.distver }} -c conda-forge
+          boa build . --python ${{ matrix.pyver.distver }} --no-remove-work-dir
         working-directory: ./conda
