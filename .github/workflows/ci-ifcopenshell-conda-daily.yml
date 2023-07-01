@@ -1,0 +1,53 @@
+name: ci-ifcopenshell-conda-daily
+
+on:
+  push:
+    branches:
+      - v0.8.0-compile-daily
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'krande/IfcOpenShell'
+    steps:
+      - name: Set env
+        run: echo ok go
+
+  test:
+    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
+    needs: activate
+    runs-on: ${{ matrix.platform.distver }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: [
+          { name: py311, distver: '3.11' }
+        ]
+        platform: [
+          { name: Windows, distver: windows-2022, upload: 'true' },
+          { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
+          { name: macOS, distver: macos-12, upload: 'true' }
+        ]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Download MacOSX SDK
+        if: ${{ matrix.platform.name == 'macOS' }}
+        run: |
+          curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz | tar -xJ -C /opt/
+          ls /opt/
+      - uses: seanmiddleditch/gha-setup-ninja@master
+      - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
+        with:
+          environment-file: conda/environment.build.yml
+          create-args: >-
+            python=${{ matrix.pyver.distver }}
+      - name: build & test ifcopenshell
+        run: |
+          boa build . --python ${{ matrix.pyver.distver }}
+        working-directory: ./conda

@@ -1,0 +1,62 @@
+context:
+  name: ifcopenshell
+  version: 0.7.0
+
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
+
+source:
+  path: ..
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - "{{ compiler('c') }}"
+    - "{{ compiler('cxx') }}"
+    - ninja >=1.10.2
+    - cmake
+    - swig >=4.0.2
+
+  host:
+    - python
+    - boost-cpp
+    - occt
+    - libxml2
+    - cgal-cpp
+    - hdf5
+    - mpfr
+    - sel(unix): gmp
+    - sel(win): mpir
+    - nlohmann_json
+    - zlib
+
+  run:
+    - python
+    - boost-cpp
+    - occt
+    - libxml2
+    - cgal-cpp
+    - hdf5
+    - mpfr
+    - sel(unix): gmp
+    - sel(win): mpir
+    - nlohmann_json
+    - zlib
+
+test:
+  imports:
+    - ifcopenshell
+
+about:
+  home: http://ifcopenshell.org
+  license: LGPL-3.0-or-later
+  license_file: COPYING
+  summary: 'IfcOpenShell is a library to support the IFC file format'
+  description: |
+    IfcOpenShell is an open source (LGPL) software library for 
+    working with the Industry Foundation Classes (IFC) file format.
+  doc_url: http://ifcopenshell.org/
+  dev_url: https://github.com/IfcOpenShell/IfcOpenShell
