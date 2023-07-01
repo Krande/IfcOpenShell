@@ -27,6 +27,7 @@ requirements:
     - libxml2
     - cgal-cpp
     - hdf5
+    - eigen
     - mpfr
     - sel(unix): gmp
     - sel(win): mpir
@@ -40,6 +41,7 @@ requirements:
     - libxml2
     - cgal-cpp
     - hdf5
+    - eigen
     - mpfr
     - sel(unix): gmp
     - sel(win): mpir
