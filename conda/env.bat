@@ -9,7 +9,7 @@
 ::
 :: Note!
 :: You have to add a .env file to the root of the project where you set PREFIX=<path to your conda env>
-
+set CONDA_BUILD=1
 set MY_PY_VER=311
 :: this will read the .env file and set the environment variables
 for /f delims= %%x in ('type .env') do set %%x
@@ -21,6 +21,8 @@ set OCC_LIBRARY_DIR=%LIBRARY_PREFIX%/lib/cmake/opencascade
 set OCC_INCLUDE_DIR=%LIBRARY_PREFIX%/include/opencascade
 
 set CGAL_DIR=%LIBRARY_PREFIX%/lib/cmake/CGAL
+set LIBXML2_INCLUDE_DIR=%LIBRARY_PREFIX%/include/libxml2
+set LIBXML2_LIBRARY=%LIBRARY_PREFIX%/lib/libxml2.lib
 
 set GMP_INCLUDE_DIR=%LIBRARY_PREFIX%/include
 set GMP_LIBRARY_DIR=%LIBRARY_PREFIX%/lib
@@ -30,9 +32,7 @@ set HDF5_SUPPORT=ON
 set HDF5_INCLUDE_DIR=%LIBRARY_PREFIX%/include
 set HDF5_LIBRARY_DIR=%LIBRARY_PREFIX%/lib
 set JSON_INCLUDE_DIR=%LIBRARY_PREFIX%/include
-set PYTHON_INCLUDE_DIR=%PREFIX%/include
-set PYTHON_EXECUTABLE=%PREFIX%/python.exe
-set PYTHON_LIBRARY=%PREFIX%/libs/python%MY_PY_VER%.lib
+
 set BUILD_IFCPYTHON=ON
 set BUILD_IFCGEOM=ON
 set COLLADA_SUPPORT=OFF
@@ -43,7 +43,7 @@ set BUILD_CONVERT=ON
 set BUILD_IFCMAX=OFF
 set IFCXML_SUPPORT=ON
 set Boost_LIBRARYDIR=%LIBRARY_PREFIX%/lib
-set Boost_INCLUDEDIR=%LIBRARY_PREFIX%/include
+set Boost_INCLUDE_DIR=%LIBRARY_PREFIX%/include
 set Boost_USE_STATIC_LIBS=OFF
 
 set PYTHON_EXECUTABLE=%PREFIX%/python.exe

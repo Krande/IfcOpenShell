@@ -1,7 +1,7 @@
 mkdir build && cd build
 
 set MY_PY_VER=%PY_VER:.=%
-set LIBXML2="%LIBRARY_PREFIX%/lib/libxml2.lib"
+rem set LIBXML2="%LIBRARY_PREFIX%/lib/libxml2.lib"
 
 cmake -G "Ninja" ^
  -D CMAKE_BUILD_TYPE:STRING=Release ^
@@ -31,8 +31,8 @@ cmake -G "Ninja" ^
  -D BUILD_CONVERT:BOOL=ON ^
  -D BUILD_IFCMAX:BOOL=OFF ^
  -D IFCXML_SUPPORT:BOOL=ON ^
- -D Boost_LIBRARYDIR:FILEPATH="%LIBRARY_PREFIX%\lib" ^
- -D Boost_INCLUDEDIR:FILEPATH="%LIBRARY_PREFIX%\include" ^
+ -D Boost_LIBRARY_DIR:FILEPATH="%LIBRARY_PREFIX%\lib" ^
+ -D Boost_INCLUDE_DIR:FILEPATH="%LIBRARY_PREFIX%\include" ^
  -D Boost_USE_STATIC_LIBS:BOOL=OFF ^
  %SRC_DIR%/cmake
 
