@@ -36,13 +36,10 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Download MacOSX SDK
+      - name: Download and extract MacOSX SDK
         if: ${{ matrix.platform.name == 'macOS' }}
         run: |
-          mkdir -p /opt/MacOSX10.13.sdk
-          chmod -R 777 /opt/MacOSX10.13.sdk
-          curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz | tar -xJ -C /opt/
-          ls /opt/
+          curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.15.sdk.tar.xz | tar -xvJf - -C /Users/runner/work/osx-sdk/
 
       - uses: seanmiddleditch/gha-setup-ninja@master
       - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
