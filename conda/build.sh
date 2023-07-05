@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# IF osx use file lib suffix .dylib
+# IF linux use file lib suffix .so
+# IF windows use file lib suffix .dll
+
+if [ "$(uname)" == "Darwin" ]; then
+    export FSUFFIX=dylib
+elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+    export FSUFFIX=so
+fi
+
+
 cmake -G Ninja \
  -DCMAKE_BUILD_TYPE=Release \
  -DCMAKE_INSTALL_PREFIX=$PREFIX \
@@ -17,7 +28,7 @@ cmake -G Ninja \
  -DJSON_INCLUDE_DIR=$PREFIX/include \
  -DCGAL_INCLUDE_DIR=$PREFIX/include \
  -DLIBXML2_INCLUDE_DIR=$PREFIX/include/libxml2 \
- -DLIBXML2_LIBRARIES=$PREFIX/lib/libxml2.so \
+ -DLIBXML2_LIBRARIES=$PREFIX/lib/libxml2.$FSUFFIX \
  -DEIGEN_DIR:FILEPATH=$PREFIX/include/eigen3 \
  -DCOLLADA_SUPPORT=0 \
  -DBUILD_EXAMPLES:BOOL=OFF \
