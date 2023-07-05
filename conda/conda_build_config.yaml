@@ -1,5 +1,5 @@
 CONDA_BUILD_SYSROOT: # used for github actions conda daily build
-  - /Users/runner/work/osx-sdk/MacOSX10.15.sdk       # [osx]
+  - /Users/runner/work/MacOSX10.15.sdk       # [osx]
 
 occt:
   - 7.7.1
