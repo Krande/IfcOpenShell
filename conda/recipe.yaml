@@ -1,6 +1,6 @@
 context:
   name: ifcopenshell
-  version: 0.7.0
+  version: 0.8.0alpha3
 
 package:
   name: '{{ name|lower }}'
