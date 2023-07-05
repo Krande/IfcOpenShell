@@ -27,24 +27,21 @@
 #include <algorithm>
 
 #include "ifc_parse_api.h"
-
-#include "../ifcparse/IfcEntityList.h"
+#include "ArgumentType.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
+#include <boost/logic/tribool.hpp>
 
-class Argument;
-class IfcEntityList;
-class IfcEntityListList;
-class IfcEntityInstanceData;
-namespace IfcParse {
-	class IfcFile;
-}
+class aggregate_of_instance;
+class aggregate_of_aggregate_of_instance;
+
 namespace IfcUtil {
 	class IfcBaseClass;
 
     IFC_PARSE_API const char* ArgumentTypeToString(ArgumentType argument_type);
 
+	/// Returns false when the string `s` contains character outside of {'0', '1'}
 	IFC_PARSE_API bool valid_binary_string(const std::string& s);
 }
 
@@ -52,6 +49,7 @@ class IFC_PARSE_API Argument {
 public:
 	virtual operator int() const;
 	virtual operator bool() const;
+	virtual operator boost::logic::tribool() const;
 	virtual operator double() const;
 	virtual operator std::string() const;
 	virtual operator boost::dynamic_bitset<>() const;
@@ -61,11 +59,11 @@ public:
 	virtual operator std::vector<double>() const;
 	virtual operator std::vector<std::string>() const;
 	virtual operator std::vector<boost::dynamic_bitset<> >() const;
-	virtual operator IfcEntityList::ptr() const;
+	virtual operator boost::shared_ptr<aggregate_of_instance>() const;
 
 	virtual operator std::vector< std::vector<int> >() const;
 	virtual operator std::vector< std::vector<double> >() const;
-	virtual operator IfcEntityListList::ptr() const;
+	virtual operator boost::shared_ptr<aggregate_of_aggregate_of_instance>() const;
 
 	virtual bool isNull() const = 0;
 	virtual unsigned int size() const = 0;

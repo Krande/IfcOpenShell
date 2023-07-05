@@ -1,44 +1,47 @@
 ﻿#include "OpenCascadeConversionResult.h"
 
 #include "../../../ifcparse/IfcLogger.h"
-#include "../../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h"
+#include "../../../ifcgeom/IfcGeomRepresentation.h"
 
 #include <TopoDS.hxx>
+#include <Geom_SphericalSurface.hxx>
 
 #include <map>
 
 namespace {
 	// We bypass the conversion to gp_GTrsf, because it does not work
 	void taxonomy_transform(const Eigen::Matrix4d* m, gp_XYZ& xyz) {
-		Eigen::Vector4d v(xyz.X(), xyz.Y(), xyz.Z(), 1.0);
-		auto v2 = (*m * v).eval();
-		xyz.ChangeData()[0] = v2(0);
-		xyz.ChangeData()[1] = v2(1);
-		xyz.ChangeData()[2] = v2(2);
+		if (m) {
+			Eigen::Vector4d v(xyz.X(), xyz.Y(), xyz.Z(), 1.0);
+			auto v2 = (*m * v).eval();
+			xyz.ChangeData()[0] = v2(0);
+			xyz.ChangeData()[1] = v2(1);
+			xyz.ChangeData()[2] = v2(2);
+		}
 	}
 }
 
-void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int surface_style_id) const {
+void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const {
 
 	// @todo remove duplication with OpenCascadeKernel::convert(const taxonomy::matrix4* matrix, gp_GTrsf& trsf);
 	// above can be static?
 
-	const auto& m = *place.components;
-
 	// A 3x3 matrix to rotate the vertex normals
-	gp_Mat rotation_matrix(
-		m(0, 0), m(0, 1), m(0, 2),
-		m(1, 0), m(1, 1), m(1, 2),
-		m(2, 0), m(2, 1), m(2, 2)
-	);
+	boost::optional<gp_Mat> rotation_matrix;
+	
+	if (place.components_) {
+		const auto& m = *place.components_;
+		rotation_matrix.emplace(
+			m(0, 0), m(0, 1), m(0, 2),
+			m(1, 0), m(1, 1), m(1, 2),
+			m(2, 0), m(2, 1), m(2, 2)
+		);
+	}
 
 	// Triangulate the shape
 	try {
-		BRepMesh_IncrementalMesh(shape_, settings.deflection_tolerance());
+		BRepMesh_IncrementalMesh(shape_, settings.deflection_tolerance(), false, settings.angular_tolerance());
 	} catch (...) {
-
-		// TODO: Catch outside
-		// Logger::Message(Logger::LOG_ERROR,"Failed to triangulate shape:",ifc_file->entityById(_id)->entity);
 		Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
 		return;
 	}
@@ -51,37 +54,56 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& setti
 		TopLoc_Location loc;
 		Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
 
-		if (!tri.IsNull()) {
-
+		if (tri.IsNull()) {
+			Logger::Message(Logger::LOG_ERROR, "Triangulation missing for face");
+		} else {
 			// Keep track of the number of times an edge is used
 			// Manifold edges (i.e. edges used twice) are deemed invisible
 			std::map<std::pair<int, int>, int> edgecount;
 			std::vector<std::pair<int, int> > edges_temp;
 
-			const TColgp_Array1OfPnt& nodes = tri->Nodes();
-			const TColgp_Array1OfPnt2d& uvs = tri->UVNodes();
 			std::vector<gp_XYZ> coords;
 			BRepGProp_Face prop(face);
 			std::map<int, int> dict;
 
 			// Vertex normals are only calculated if vertices are not welded and calculation is not disable explicitly.
-			const bool calculate_normals = !settings.get(ifcopenshell::geometry::settings::WELD_VERTICES) &&
-				!settings.get(ifcopenshell::geometry::settings::NO_NORMALS);
+			const bool calculate_normals = !settings.get(IfcGeom::IteratorSettings::WELD_VERTICES) &&
+				!settings.get(IfcGeom::IteratorSettings::NO_NORMALS);
 
-			for (int i = 1; i <= nodes.Length(); ++i) {
-				coords.push_back(nodes(i).Transformed(loc).XYZ());
-				taxonomy_transform(place.components, *coords.rbegin());
+			for (int i = 1; i <= tri->NbNodes(); ++i) {
+				coords.push_back(tri->Node(i).Transformed(loc).XYZ());
+				taxonomy_transform(place.components_, *coords.rbegin());
 				const gp_XYZ& last = *coords.rbegin();
 				dict[i] = t->addVertex(surface_style_id, last.X(), last.Y(), last.Z());
 
 				if (calculate_normals) {
-					const gp_Pnt2d& uv = uvs(i);
+					const gp_Pnt2d& uv = tri->UVNode(i);
 					gp_Pnt p;
 					gp_Vec normal_direction;
 					prop.Normal(uv.X(), uv.Y(), p, normal_direction);
 					gp_Vec normal(0., 0., 0.);
 					if (normal_direction.Magnitude() > 1.e-9) {
-						normal = gp_Dir(normal_direction.XYZ() * rotation_matrix);
+						if (rotation_matrix) {
+							normal = gp_Dir(normal_direction.XYZ() * *rotation_matrix);
+						} else {
+							normal = normal_direction;
+						}
+					} else {
+						Handle_Geom_Surface surf = BRep_Tool::Surface(face);
+						// Special case the normal at the poles of a spherical surface
+						if (surf->DynamicType() == STANDARD_TYPE(Geom_SphericalSurface)) {
+							if (fabs(fabs(uv.Y()) - M_PI / 2.) < 1.e-9) {
+								const bool is_top = uv.Y() > 0;
+								const bool is_forward = face.Orientation() == TopAbs_FORWARD;
+								const double z = (is_top == is_forward) ? 1. : -1.;
+								if (rotation_matrix) {
+									normal = gp_Dir(gp_XYZ(0, 0, z) * *rotation_matrix);
+								} else {
+									normal = gp_Dir(gp_XYZ(0, 0, z));
+								}
+							}
+						}
+						// TODO: Do the same for conical surfaces, but they are rare in IFC.
 					}
 					t->addNormal(normal.X(), normal.Y(), normal.Z());
 				}
@@ -123,10 +145,8 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& setti
 		}
 	}
 
-	/*
-	TODO: Unimplemented
-	if (!t.normals().empty() && settings().get(IfcGeom::IteratorSettings::GENERATE_UVS)) {
-		t.uvs() = box_project_uvs(t.verts(), t.normals());
+	if (!t->normals().empty() && settings.get(IfcGeom::IteratorSettings::GENERATE_UVS)) {
+		t->uvs() = IfcGeom::Representation::Triangulation::box_project_uvs(t->verts(), t->normals());
 	}
 
 	if (num_faces == 0) {
@@ -134,69 +154,65 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& setti
 		// and loose edges is discouraged by the standard. An alternative would be to use
 		// TopExp_Explorer texp(s, TopAbs_EDGE, TopAbs_FACE) to find edges that do not
 		// belong to any face.
-		for (TopExp_Explorer texp(s, TopAbs_EDGE); texp.More(); texp.Next()) {
+		for (TopExp_Explorer texp(shape_, TopAbs_EDGE); texp.More(); texp.Next()) {
 			BRepAdaptor_Curve crv(TopoDS::Edge(texp.Current()));
 			GCPnts_QuasiUniformDeflection tessellater(crv, settings.deflection_tolerance());
 			int n = tessellater.NbPoints();
-			int start = (int)t->verts().size() / 3;
+			int previous = -1;
+
 			for (int i = 1; i <= n; ++i) {
 				gp_XYZ p = tessellater.Value(i).XYZ();
 
-				// // In case you want direction arrows on your edges
-				// double u = tessellater.Parameter(i);
-				// gp_XYZ p2, p3;
-				// gp_Pnt tmp;
-				// gp_Vec tmp2;
-				// crv.D1(u, tmp, tmp2);
-				// gp_Dir d1, d2, d3, d4;
-				// d1 = tmp2;
-				// if (texp.Current().Orientation() == TopAbs_REVERSED) {
-				// d1 = -d1;
-				// }
-				// if (fabs(d1.Z()) < 0.5) {
-				// d2 = d1.Crossed(gp::DZ());
-				// } else {
-				// d2 = d1.Crossed(gp::DY());
-				// }
-				// d3 = d1.XYZ() + d2.XYZ();
-				// d4 = d1.XYZ() - d2.XYZ();
-				// p2 = p - d3.XYZ() / 10.;
-				// p3 = p - d4.XYZ() / 10.;
-				// trsf.Transforms(p2);
-				// trsf.Transforms(p3);
-				// _material_ids.push_back(surface_style_id);
-				// _material_ids.push_back(surface_style_id);
-				// _verts.push_back(static_cast<P>(p2.X()));
-				// _verts.push_back(static_cast<P>(p2.Y()));
-				// _verts.push_back(static_cast<P>(p2.Z()));
-				// _verts.push_back(static_cast<P>(p3.X()));
-				// _verts.push_back(static_cast<P>(p3.Y()));
-				// _verts.push_back(static_cast<P>(p3.Z()));
+				taxonomy_transform(place.components_, p);
 
-				trsf.Transforms(p);
+				int current = t->addVertex(surface_style_id, p.X(), p.Y(), p.Z());
 
-				t->material_ids().push_back(surface_style_id);
-
-				t->verts().push_back(static_cast<double>(p.X()));
-				t->verts().push_back(static_cast<double>(p.Y()));
-				t->verts().push_back(static_cast<double>(p.Z()));
-
+				std::vector<std::pair<int, int>> segments;
 				if (i > 1) {
-					t->edges().push_back(start + i - 2);
-					t->edges().push_back(start + i - 1);
-					// _edges.push_back(start + 3 * (i - 2) + 2);
-					// _edges.push_back(start + 3 * (i - 1) + 2);
+					segments.push_back(std::make_pair(previous, current));
 				}
 
-				// _edges.push_back(start + 3 * (i - 1) + 0);
-				// _edges.push_back(start + 3 * (i - 1) + 2);
-				// _edges.push_back(start + 3 * (i - 1) + 1);
-				// _edges.push_back(start + 3 * (i - 1) + 2);
+				if (settings.get(IfcGeom::IteratorSettings::EDGE_ARROWS)) {
+					// In case you want direction arrows on your edges
+					double u = tessellater.Parameter(i);
+					gp_XYZ p2, p3;
+					gp_Pnt tmp;
+					gp_Vec tmp2;
+					crv.D1(u, tmp, tmp2);
+					gp_Dir d1, d2, d3, d4;
+					d1 = tmp2;
+					if (texp.Current().Orientation() == TopAbs_REVERSED) {
+						d1 = -d1;
+					}
+					if (fabs(d1.Z()) < 0.5) {
+						d2 = d1.Crossed(gp::DZ());
+					} else {
+						d2 = d1.Crossed(gp::DY());
+					}
+					d3 = d1.XYZ() + d2.XYZ();
+					d4 = d1.XYZ() - d2.XYZ();
+					p2 = p - d3.XYZ() / 10.;
+					p3 = p - d4.XYZ() / 10.;
+
+					taxonomy_transform(place.components_, p2);
+					taxonomy_transform(place.components_, p3);
+					taxonomy_transform(place.components_, p);
+
+					int left = t->addVertex(surface_style_id, p2.X(), p2.Y(), p2.Z());
+					int right = t->addVertex(surface_style_id, p3.X(), p3.Y(), p3.Z());
+
+					segments.push_back(std::make_pair(left, current));
+					segments.push_back(std::make_pair(right, current));
+				}
+
+				for (auto& sgmt : segments) {
+					t->addEdge(surface_style_id, sgmt.first, sgmt.second);
+				}
+
+				previous = current;
 			}
 		}
 	}
-
-	*/
 
 	BRepTools::Clean(shape_);
 }

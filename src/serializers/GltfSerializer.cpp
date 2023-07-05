@@ -45,7 +45,7 @@ static const uint32_t PRIM_TRIANGLE_STRIP = 5;
 static const uint32_t PRIM_TRIANGLE_FAN = 6;
 
 GltfSerializer::GltfSerializer(const std::string& filename, const SerializerSettings& settings)
-	: GeometrySerializer(settings)
+	: WriteOnlyGeometrySerializer(settings)
 	, filename_(filename)
 	, tmp_filename1_(filename + ".indices.tmp")
 	, tmp_filename2_(filename + ".vertices.tmp")
@@ -79,31 +79,28 @@ void GltfSerializer::writeHeader() {
 }
 
 int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style& style) {
-	// @todo is it safe to always dereference this optional?	
-	const std::string& name = *style.name;
-
-	auto it = materials_.find(name);
+	auto it = materials_.find(style.name);
 	if (it != materials_.end()) {
 		return it->second;
 	}
 	
 	int idx = json_["materials"].size();
-	materials_[name] = idx;
+	materials_[style.name] = idx;
 
 	std::array<double, 4> base;
 	base.fill(1.0);
 	if (style.diffuse) {
 		for (int i = 0; i < 3; ++i) {
-			base[i] = (*style.diffuse->components)[i];
+			base[i] = style.diffuse.ccomponents()(i);
 		}
 	}
-	if (style.transparency) {
-		base[3] = 1. - *style.transparency;
+	if (style.transparency == style.transparency) {
+		base[3] = 1. - style.transparency;
 	}
 
 	json_["materials"].push_back({ {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}} });
 	
-	if (style.transparency && *style.transparency > 1.e-9) {
+	if (style.transparency == style.transparency && style.transparency > 1.e-9) {
 		json_["materials"].back()["alphaMode"] = "BLEND";
 	}
 
@@ -160,23 +157,22 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end) {
 	return j["accessors"].size() - 1;
 }
 
-void GltfSerializer::write(const ifcopenshell::geometry::TriangulationElement* o) {
+void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 	if (o->geometry().material_ids().empty()) {
 		return;
 	}
 
 	node_array_.push_back(json_["nodes"].size());
 
-	const double* m = o->transformation().data().components->data();
-
-	// nb: note that this applies the Y-UP transform.
+	const auto& m = o->transformation().data().ccomponents();
+	// nb: note that this contains the Y-UP transform as well.
+	// @todo check
 	const std::array<double, 16> matrix_flat = {
-		m[ 0], m[ 2], -m[ 1], m[ 3],
-		m[ 4], m[ 6], -m[ 5], m[ 7],
-		m[ 8], m[10], -m[ 9], m[11],
-		m[12], m[14], -m[13], m[15]
+		m(0,0), m(2,0), -m(1,0), m(3,0),
+		m(0,1), m(2,1), -m(1,1), m(3,1),
+		m(0,2), m(2,2), -m(1,2), m(3,2),
+		m(0,3), m(2,3), -m(1,3), m(3,3)
 	};
-
 	static const std::array<double, 16> identity_matrix = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 	
 	json node;
@@ -194,8 +190,21 @@ void GltfSerializer::write(const ifcopenshell::geometry::TriangulationElement* o
 
 		auto mid1 = o->geometry().material_ids().begin();
 		auto mid0 = mid1;
-		auto fid0 = o->geometry().faces().begin();
-		
+
+		std::vector<int>::const_iterator fid0;
+		int stride;
+		int primitive_type;
+
+		if (!o->geometry().faces().empty()) {
+			stride = 3;
+			fid0 = o->geometry().faces().begin();
+			primitive_type = PRIM_TRIANGLES;
+		} else {
+			stride = 2;
+			fid0 = o->geometry().edges().begin();
+			primitive_type = PRIM_LINES;
+		}
+
 		json mesh;
 		mesh["name"] = o->geometry().id();
 		
@@ -211,14 +220,14 @@ void GltfSerializer::write(const ifcopenshell::geometry::TriangulationElement* o
 
 			if ((mid1 == o->geometry().material_ids().end()) || (*mid1 != *mid0)) {
 				auto n = std::distance(mid0, mid1);
-				auto fid1 = fid0 + n * 3;
+				auto fid1 = fid0 + n * stride;
 
 				auto idx_range = std::minmax_element(fid0, fid1);
 				const auto& idx_begin = *idx_range.first;
 				const auto& idx_end = *idx_range.second + 1;
 
 				std::vector<int> idx_transformed;
-				idx_transformed.reserve((n * 3));
+				idx_transformed.reserve((n * stride));
 				std::transform(fid0, fid1, std::back_inserter(idx_transformed), [idx_begin](int i) {
 					return i - idx_begin;
 				});
@@ -231,12 +240,14 @@ void GltfSerializer::write(const ifcopenshell::geometry::TriangulationElement* o
 				std::vector<float> vf(vbegin + idx_begin * 3, vbegin + idx_end * 3);
 				primitive["attributes"]["POSITION"] = write_accessor<3U>(json_, tmp_fstream2_, vf.begin(), vf.end());
 
-				auto nbegin = o->geometry().normals().begin();
-				std::vector<float> nf(nbegin + idx_begin * 3, nbegin + idx_end * 3);
-				primitive["attributes"]["NORMAL"] = write_accessor<3U>(json_, tmp_fstream2_, nf.begin(), nf.end());
+				if (o->geometry().normals().size()) {
+					auto nbegin = o->geometry().normals().begin();
+					std::vector<float> nf(nbegin + idx_begin * 3, nbegin + idx_end * 3);
+					primitive["attributes"]["NORMAL"] = write_accessor<3U>(json_, tmp_fstream2_, nf.begin(), nf.end());
+				}
 				
 				primitive["material"] = writeMaterial(o->geometry().materials()[*mid0]);
-				primitive["mode"] = PRIM_TRIANGLES;
+				primitive["mode"] = primitive_type;
 				
 				mesh["primitives"].push_back(primitive);
 

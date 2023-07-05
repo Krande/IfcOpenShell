@@ -34,12 +34,12 @@
 #include <BRepAdaptor_Curve.hxx>
 #include <GCPnts_QuasiUniformDeflection.hxx>
 
-#include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
+#include "../../../ifcgeom/ConversionResult.h"
 
 namespace ifcopenshell {
 	namespace geometry {
 
-		class OpenCascadeShape : public ConversionResultShape {
+		class OpenCascadeShape : public IfcGeom::ConversionResultShape {
 		public:
 			OpenCascadeShape(const TopoDS_Shape& shape)
 				: shape_(shape) {}
@@ -47,17 +47,29 @@ namespace ifcopenshell {
 			const TopoDS_Shape& shape() const { return shape_; }
 			operator const TopoDS_Shape& () { return shape_; }
 
-			virtual void Triangulate(const settings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int surface_style_id) const;
+			virtual void Triangulate(const IfcGeom::IteratorSettings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int surface_style_id) const;
 
 			virtual void Serialize(std::string&) const {
 				throw std::runtime_error("Not implemented");
 			}
 
-			virtual ConversionResultShape* clone() const {
+			virtual IfcGeom::ConversionResultShape* clone() const {
 				return new OpenCascadeShape(shape_);
 			}
 
 			virtual bool is_manifold() const;
+
+			virtual double bounding_box(void*&) const {
+				throw std::runtime_error("Not implemented");
+			}
+
+			virtual int num_vertices() const {
+				throw std::runtime_error("Not implemented");
+			}
+
+			virtual void set_box(void*) {
+				throw std::runtime_error("Not implemented");
+			}
 
 			virtual int surface_genus() const;
 		private:

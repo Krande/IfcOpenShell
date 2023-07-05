@@ -21,7 +21,7 @@ FIND_PACKAGE(SWIG)
 IF(NOT SWIG_FOUND)
 	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find SWIG. Disable BUILD_IFCPYTHON or fix SWIG paths to proceed.")
 ENDIF()
-
+include(GNUInstallDirs)
 INCLUDE(${SWIG_USE_FILE})
 
 IF(NOT "$ENV{PYTHON_INCLUDE_DIR}" STREQUAL "")
@@ -43,7 +43,7 @@ ENDIF()
 INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-SET(CMAKE_SWIG_FLAGS "")
+SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 # NOTE Workaround for most likely missing debug Python libraries on Windows (requires Python built from the source).
 # Python 3.5 intaller and onwards will have an option to install the debug libraries too.
 # NOTE PYTHON_DEBUG_LIBRARIES appears to be a deprecated variable
@@ -53,12 +53,12 @@ IF (WIN32 AND NOT PYTHON_DEBUG_LIBRARIES)
 ENDIF()
 
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
-SWIG_ADD_MODULE(ifcopenshell_wrapper python IfcPython.i)
+swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
 # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} libsvgfill)
 else()
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${PYTHON_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${PYTHON_LIBRARIES} libsvgfill)
 endif()
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR}")
@@ -67,16 +67,31 @@ endif()
 # Try to find the Python interpreter to get the site-packages
 # directory in which the wrapper can be installed.
 FIND_PACKAGE(PythonInterp)
-IF(PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "")
-    EXECUTE_PROCESS(
-        COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils.sysconfig import get_python_lib; sys.stdout.write(get_python_lib(1))"
-        OUTPUT_VARIABLE python_package_dir
-    )
-
+IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MODULE_INSTALL_DIR)
+    if (PYTHON_MODULE_INSTALL_DIR)
+	set(python_package_dir "${PYTHON_MODULE_INSTALL_DIR}")
+    else()
+        IF (USERSPACE_PYTHON_PREFIX)
+            EXECUTE_PROCESS(
+                COMMAND ${PYTHON_EXECUTABLE} -c "import sys; import site; sys.stdout.write(site.USER_SITE)"
+                OUTPUT_VARIABLE python_package_dir
+            )
+        ELSE ()
+            EXECUTE_PROCESS(
+                COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils.sysconfig import get_python_lib; sys.stdout.write(get_python_lib(1))"
+                OUTPUT_VARIABLE python_package_dir
+            )
+        ENDIF()
+        if (BUILD_PACKAGE)
+            set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
+        endif()
+    endif()
     IF("${python_package_dir}" STREQUAL "")
         MESSAGE(WARNING "Unable to locate Python site-package directory, unable to install the Python wrapper")
     ELSE()
-        FILE(GLOB_RECURSE sourcefiles "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*.py")
+        FILE(GLOB_RECURSE sourcefiles 
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*"
+        )
         FOREACH(file ${sourcefiles})
             FILE(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
             GET_FILENAME_COMPONENT(dir "${relative}" DIRECTORY)
@@ -87,6 +102,9 @@ IF(PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "")
                 DESTINATION "${python_package_dir}/ifcopenshell")
         INSTALL(TARGETS _ifcopenshell_wrapper
                 DESTINATION "${python_package_dir}/ifcopenshell")
+	if (MSVC)
+	    install(FILES $<TARGET_PDB_FILE:_ifcopenshell_wrapper> DESTINATION bin OPTIONAL)
+	endif()
     ENDIF()
 ELSE()
     MESSAGE(WARNING "No Python interpreter found, unable to install the Python wrapper")

@@ -41,13 +41,16 @@
 #pragma GCC diagnostic pop
 #endif
 
-#include "../serializers/GeometrySerializer.h"
+#include "../ifcgeom/Iterator.h"
+
+#include "../serializers/serializers_api.h"
+#include "../ifcgeom/GeometrySerializer.h"
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
 
-class ColladaSerializer : public GeometrySerializer
+class SERIALIZERS_API ColladaSerializer : public WriteOnlyGeometrySerializer
 {
 	// TODO The vast amount of implement details of ColladaSerializer could be hidden to the cpp file.
 private:
@@ -86,7 +89,7 @@ private:
 			const std::string scene_id;
 			bool scene_opened;
 			std::stack<COLLADASW::Node*> parentNodes;
-			std::stack<ifcopenshell::geometry::Transformation> matrixStack;
+			std::stack<ifcopenshell::geometry::taxonomy::matrix4> matrixStack;
 		public:
 			ColladaScene(const std::string& scene_id, COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryVisualScenes(&stream)
@@ -95,8 +98,8 @@ private:
                 , serializer(_serializer)
 			{}
 			void add(const std::string& node_id, const std::string& node_name, const std::string& geom_name,
-                const std::vector<std::string>& material_ids, const ifcopenshell::geometry::Transformation& matrix);
-			void addParent(const ifcopenshell::geometry::Element& parent);
+                const std::vector<std::string>& material_ids, const IfcGeom::Transformation& matrix);
+			void addParent(const IfcGeom::Element& parent);
 			void closeParent();
 			COLLADASW::Node* GetDirectParent();
 			void write();
@@ -156,7 +159,7 @@ private:
 
 		public:
 			std::string unique_id, representation_id, type;
-			ifcopenshell::geometry::Transformation transformation;
+			IfcGeom::Transformation transformation;
 			std::vector<double> vertices;
 			std::vector<double> normals;
 			std::vector<int> faces;
@@ -165,9 +168,9 @@ private:
 			std::vector<ifcopenshell::geometry::taxonomy::style> materials;
 			std::vector<std::string> material_references;
             std::vector<double> uvs;
-			std::vector<const ifcopenshell::geometry::Element*> parents_;
+			std::vector<const IfcGeom::Element*> parents_;
 
-			DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const ifcopenshell::geometry::Transformation& transformation,
+			DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const IfcGeom::Transformation& transformation,
 				const std::vector<double>& vertices, const std::vector<double>& normals, const std::vector<int>& faces,
 				const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<ifcopenshell::geometry::taxonomy::style>& materials,
 				const std::vector<std::string>& material_references, const std::vector<double>& uvs)
@@ -185,8 +188,8 @@ private:
 				, uvs(uvs)
 			{}
 
-			std::vector<const ifcopenshell::geometry::Element*>& parents() { return parents_; }
-			const std::vector<const ifcopenshell::geometry::Element*>& parents() const { return parents_; }
+			std::vector<const IfcGeom::Element*>& parents() { return parents_; }
+			const std::vector<const IfcGeom::Element*>& parents() const { return parents_; }
 		};
 		COLLADABU::NativeString filename;
 		COLLADASW::StreamWriter stream;
@@ -209,7 +212,7 @@ private:
 		std::vector<DeferredObject> deferreds;
 		virtual ~ColladaExporter() {}
 		void startDocument(const std::string& unit_name, float unit_magnitude);
-		void write(const ifcopenshell::geometry::TriangulationElement* o);
+		void write(const IfcGeom::TriangulationElement* o);
 		void endDocument();
 	};
 	ColladaExporter exporter;
@@ -217,7 +220,7 @@ private:
 	float unit_magnitude;
 public:
     ColladaSerializer(const std::string& dae_filename, const SerializerSettings& settings)
-        : GeometrySerializer(settings)
+        : WriteOnlyGeometrySerializer(settings)
 		, exporter("IfcOpenShell", dae_filename, this, settings.precision >= 15)
     {
         exporter.serializer = this;
@@ -227,8 +230,8 @@ public:
     }
 	bool ready();
 	void writeHeader();
-	void write(const ifcopenshell::geometry::TriangulationElement* o);
-    void write(const ifcopenshell::geometry::NativeElement* /*o*/) {}
+	void write(const IfcGeom::TriangulationElement* o);
+    void write(const IfcGeom::BRepElement* /*o*/) {}
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& name, float magnitude) {
@@ -237,7 +240,7 @@ public:
 	}
 	void setFile(IfcParse::IfcFile*) {}
 
-    std::string object_id(const ifcopenshell::geometry::Element* o) /*override*/;
+    std::string object_id(const IfcGeom::Element* o) /*override*/;
 
 private:
     static std::string differentiateSlabTypes(const IfcUtil::IfcBaseEntity* slab);

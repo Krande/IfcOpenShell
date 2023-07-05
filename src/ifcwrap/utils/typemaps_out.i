@@ -1,4 +1,4 @@
-%typemap(out) IfcEntityList::ptr {
+%typemap(out) aggregate_of_instance::ptr {
 	const unsigned size = $1 ? $1->size() : 0;
 	$result = PyTuple_New(size);
 	for (unsigned i = 0; i < size; ++i) {
@@ -21,6 +21,8 @@
 		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_simple_type()), SWIGTYPE_p_IfcParse__simple_type, 0);
 	} else if ($1->as_aggregation_type()) {
 		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_aggregation_type()), SWIGTYPE_p_IfcParse__aggregation_type, 0);
+	} else {
+		$result = SWIG_Py_Void();
 	}
 }
 
@@ -36,9 +38,16 @@
 	try {
 	const Argument& arg = *($1.second);
 	const IfcUtil::ArgumentType type = $1.first;
-	if (arg.isNull() || type == IfcUtil::Argument_DERIVED) {
+	if (arg.isNull()) {
 		Py_INCREF(Py_None);
 		$result = Py_None;
+	} else if (type == IfcUtil::Argument_DERIVED) {
+		if (feature_use_attribute_value_derived) {
+			$result = SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
+		} else {
+			Py_INCREF(Py_None);
+			$result = Py_None;
+		}
 	} else {
 	switch(type) {
 		case IfcUtil::Argument_INT: {
@@ -47,6 +56,10 @@
 		break; }
 		case IfcUtil::Argument_BOOL: {
 			bool v = arg;
+			$result = pythonize(v);
+		break; }
+		case IfcUtil::Argument_LOGICAL: {
+			boost::logic::tribool v = arg;
 			$result = pythonize(v);
 		break; }
 		case IfcUtil::Argument_DOUBLE: {
@@ -79,7 +92,7 @@
 			$result = pythonize(v);
 		break; }
 		case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-			IfcEntityList::ptr v = arg;
+			aggregate_of_instance::ptr v = arg;
 			$result = pythonize(v);
 		break; }
 		case IfcUtil::Argument_AGGREGATE_OF_BINARY: {
@@ -95,7 +108,7 @@
 			$result = pythonize_vector2(v);
 		break; }
 		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
-			IfcEntityListList::ptr v = arg;
+			aggregate_of_aggregate_of_instance::ptr v = arg;
 			$result = pythonize(v);
 		break; }
 		case IfcUtil::Argument_EMPTY_AGGREGATE: {
@@ -128,7 +141,7 @@ CREATE_VECTOR_TYPEMAP_OUT(int)
 CREATE_VECTOR_TYPEMAP_OUT(unsigned int)
 CREATE_VECTOR_TYPEMAP_OUT(double)
 CREATE_VECTOR_TYPEMAP_OUT(std::string)
-CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::Material)
+// CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::Material)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::attribute const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::inverse_attribute const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::entity const *)

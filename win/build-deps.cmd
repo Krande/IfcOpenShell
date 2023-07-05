@@ -24,6 +24,13 @@
 @echo off
 echo.
 
+for %%Q in ("%~dp0\.") DO set "batpath=%%~fQ"
+
+if NOT "%CD%" == "%batpath%" (
+    GOTO :ErrorAndPrintUsage
+)
+
+
 set PROJECT_NAME=IfcOpenShell
 call utils\cecho.cmd 15 0 "This script fetches and builds all %PROJECT_NAME% dependencies"
 echo.
@@ -48,6 +55,18 @@ if not %ERRORLEVEL%==0 (
 :: Set up variables depending on the used Visual Studio version
 call vs-cfg.cmd %1
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:: Set up the BuildDepsCache.txt filename
+IF DEFINED VS_TOOLSET (
+    set BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%-%VS_TOOLSET%.txt
+) ELSE (
+    set BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%.txt
+)
+
+:: fix for Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
+:: see https://tracker.dev.opencascade.org/view.php?id=31628
+SET COMPILE_WITH_WPO=FALSE
+
 call build-type-cfg.cmd %2
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -67,16 +86,13 @@ IF NOT EXIST "%INSTALL_DIR%". mkdir "%INSTALL_DIR%"
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
-IF NOT DEFINED IFCOS_USE_OCCT set IFCOS_USE_OCCT=TRUE
 IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
-IF NOT DEFINED IFCOS_USE_PYTHON2 set IFCOS_USE_PYTHON2=FALSE
 IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
 :: For subroutines
-set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS%
 REM /clp:ErrorsOnly;WarningsOnly
 :: Note BUILD_TYPE not passed, Clean e.g. wouldn't delete the installed files.
-set INSTALL_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS%
+set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS%
 
 echo.
 
@@ -97,6 +113,11 @@ if "%CMAKE_VERSION%" LSS "cmake version 3.11.4" (
     goto :ErrorAndPrintUsage
 )
 
+:: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
+set BOOST_VERSION=1.74.0
+:: Version string with underscores instead of dots.
+set BOOST_VER=%BOOST_VERSION:.=_%
+
 :: Print build configuration information
 
 call cecho.cmd 0 10 "Script configuration:"
@@ -104,6 +125,10 @@ call cecho.cmd 0 13 "* CMake Generator`t= '`"%GENERATOR%`'`t
 echo   - Passed to CMake -G option.
 call cecho.cmd 0 13 "* Target Architecture`t= %TARGET_ARCH%"
 echo   - Whether were doing 32-bit (x86) or 64-bit (x64) build.
+call cecho.cmd 0 13 "* Target Platform`t= %VS_PLATFORM%"
+echo   - Passed to CMake -A option.
+call cecho.cmd 0 13 "* Target Toolset`t= %VS_TOOLSET%"
+echo   - Passed to CMake -T option.
 call cecho.cmd 0 13 "* Dependency Directory`t= %DEPS_DIR%"
 echo   - The directory where %PROJECT_NAME% dependencies are fetched and built.
 call cecho.cmd 0 13 "* Installation Directory = %INSTALL_DIR%"
@@ -115,14 +140,9 @@ IF %BUILD_CFG%==MinSizeRel call cecho.cmd 0 14 "     WARNING: MinSizeRel build c
 call cecho.cmd 0 13 "* Build Type`t`t= %BUILD_TYPE%"
 echo   - The used build type for the dependencies (Build, Rebuild, Clean).
 echo     Defaults to Build if not specified. Rebuild/Clean also uninstalls Python (if it was installed by this script).
-call cecho.cmd 0 13 "* IFCOS_USE_OCCT`t= %IFCOS_USE_OCCT%"
-echo   - Use the official Open CASCADE instead of the community edition.
 call cecho.cmd 0 13 "* IFCOS_INSTALL_PYTHON`t= %IFCOS_INSTALL_PYTHON%"
 echo   - Download and install Python.
 echo     Set to something other than TRUE if you wish to use an already installed version of Python.
-call cecho.cmd 0 13 "* IFCOS_USE_PYTHON2`t= %IFCOS_USE_PYTHON2%"
-echo   - Use Python 2 instead of 3.
-echo     Set to TRUE if you wish to use Python 2 instead of 3. Has no effect if IFCOS_INSTALL_PYTHON is not TRUE.
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo   - How many MSBuild.exe processes may be run in parallel.
 echo     Defaults to NUMBER_OF_PROCESSORS. Used also by other IfcOpenShell build scripts.
@@ -130,16 +150,13 @@ echo.
 
 call :PrintUsage
 
-call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to proceed `(VS 2015 x64 RelWithDebInfo`)."
+call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to proceed."
 echo.
 
 call cecho.cmd black cyan "If you are not ready with the above: type `'n`' in the prompt below. Build proceeds on all other inputs!"
 
 set /p do_continue="> "
 if "%do_continue%"=="n" goto :Finish
-
-:: Cache last used CMake generator for other scripts to use
-if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
 
 echo.
 set START_TIME=%TIME%
@@ -149,29 +166,117 @@ echo.
 
 cd "%DEPS_DIR%"
 
-:: Define the version strings at the top in case individual dependencies are skipped
-set BOOST_VERSION=1.67.0
-set BOOST_VER=%BOOST_VERSION:.=_%
-set OCCT_VERSION=7.3.0p3
-set OCE_VERSION=OCE-0.18
+:: VERSIONS
+set HDF5_VERSION=1.8.22
+set HDF5_VERSION_MAJOR=1.8
+set OCCT_VERSION=7.7.1
+:: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
+:: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
 set PYTHON_VERSION=3.4.3
-set SWIG_VERSION=3.0.12
+
+:: VERSION DERIVATIONS
+set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
+set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
+set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+
+:: Cache last used CMake generator and configurable dependency dirs for other scripts to use
+:: This is consolidated at the beginning of the script so that the script can be partially
+:: executed by jumping (using goto) to different labels.
+if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo HDF5_VERSION=%HDF5_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
+    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+    echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+)
+
+:mpir
+set DEPENDENCY_NAME=mpir
+set DEPENDENCY_DIR=%DEPS_DIR%\mpir
+call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+git clean -fdx
+REM There probably need to be quotes here around the filename
+powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_cxx\"}" | git apply --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero --ignore-whitespace 
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd msvc
+cd vs%VS_VER:~2,2%
+call .\msbuild.bat gc LIB %VS_PLATFORM% %DEBUG_OR_RELEASE%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
+copy ..\..\lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpir"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:mpfr
+set DEPENDENCY_NAME=mpfr
+set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
+call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+if "%VS_VER%"=="2017" (
+  set mpfr_sln=build.vc15
+  set orig_platform_toolset=v141
+) else (
+  set mpfr_sln=build.vs19
+  set orig_platform_toolset=v142
+)
+powershell -c "get-childitem %DEPENDENCY_DIR%\%mpfr_sln% -recurse -include *.vcxproj | select -expand fullname | foreach { (Get-Content $_) -replace '%orig_platform_toolset%', 'v%VC_VER:.=%' | Set-Content $_ }"
+call :BuildSolution "%DEPENDENCY_DIR%\%mpfr_sln%\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+REM This command fails because not all msvc projects are patched with the right sdk version
+IF NOT EXIST lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\mpfr.lib GOTO :Error
+IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
+copy lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpfr"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:HDF5
+set DEPENDENCY_NAME=hdf5
+set DEPENDENCY_DIR=%DEPS_DIR%
+cd "%DEPENDENCY_DIR%"
+set HDF5_CMAKE_ZIP=CMake-hdf5-%HDF5_VERSION%.zip
+set HDF5_INSTALL_ZIP_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
+if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
+call :DownloadFile http://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%HDF5_VERSION_MAJOR%/hdf5-%HDF5_VERSION%/src/CMake-hdf5-%HDF5_VERSION%.zip "%DEPS_DIR%" %HDF5_CMAKE_ZIP%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+pushd "%DEPS_DIR%\CMake-hdf5-%HDF5_VERSION%"
+git apply %~dp0patches\hdf5vs2022.patch --ignore-whitespace
+rem It is not checked whether this patch is applied successfully!
+ctest -S HDF5config.cmake,BUILD_GENERATOR=VS%VS_VER%%ARCH_BITS_64% -C %BUILD_CFG% -V -O hdf5.log
+call :ExtractArchive %HDF5_INSTALL_ZIP_NAME%.zip "%INSTALL_DIR%" "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%"
+popd
 
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
 :Boost
-:: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
-:: Version string with underscores instead of dots.
-set BOOST_VER=%BOOST_VERSION:.=_%
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
 set DEPENDENCY_NAME=Boost %BOOST_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\boost_%BOOST_VER%
-set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%VS_PLATFORM%\lib
+set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%\lib
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
 set BOOST_ZIP=boost_%BOOST_VER%.%ZIP_EXT%
 
-call :DownloadFile https://dl.bintray.com/boostorg/release/%BOOST_VERSION%/source/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
+:: On 2021-05-11 Boost changed download address:
+:: Instead of: https://dl.bintray.com/boostorg/release/ you should use https://boostorg.jfrog.io/artifactory/main/release/ to retrieve boost releases.
+
+rem call :DownloadFile https://dl.bintray.com/boostorg/release/%BOOST_VERSION%/source/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
+call :DownloadFile https://boostorg.jfrog.io/artifactory/main/release/%BOOST_VERSION%/source/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
@@ -183,7 +288,7 @@ if not exist "%DEPENDENCY_DIR%\project-config.jam". (
     IF NOT EXIST "%DEPENDENCY_DIR%\boost.css" GOTO :Error
     cd "%DEPENDENCY_DIR%"
     call cecho.cmd 0 13 "Building Boost build script."
-    call bootstrap msvc
+    call bootstrap %BOOST_BOOTSTRAP_VER%
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 )
 
@@ -192,15 +297,10 @@ set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options -
 cd "%DEPENDENCY_DIR%"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
 IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
-:: BOOST_VC_VER can be empty (or needs to be) for newer VS versions
-set BOOST_VC_VER=
-if %VS_VER% LSS 2017 (
-    set BOOST_VC_VER=-%VC_VER%.0
-)
 
-if NOT "%USE_STATIC_RUNTIME%"=="FALSE" set RUNTIME_LINK_STATIC=runtime-link=static
-call .\b2 toolset=msvc%BOOST_VC_VER% %RUNTIME_LINK_STATIC% address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
-    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
+call .\b2 toolset=%BOOST_TOOLSET% runtime-link=shared address-model=%ARCH_BITS% --abbreviate-paths -j%IFCOS_NUM_BUILD_PROCS% ^
+    variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=stage/%GEN_SHORTHAND% 
+
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :JSON
@@ -219,13 +319,12 @@ cd "%DEPENDENCY_DIR%"
 :: Debug build of OpenCOLLADAValidator fails (https://github.com/KhronosGroup/OpenCOLLADA/issues/377) so
 :: so disable it from the build altogether as we have no use for it
 findstr #add_subdirectory(COLLADAValidator) CMakeLists.txt>NUL
-IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOLLADA_CMakeLists.txt.patch"
+IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOLLADA_CMakeLists.txt.patch" --ignore-whitespace
 :: NOTE OpenCOLLADA has been observed to have problems with switching between debug and release builds so
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
 REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
 :: NOTE Enforce that the embedded LibXml2 and PCRE are used as there might be problems with arbitrary versions of the libraries.
-if NOT "%USE_STATIC_RUNTIME%"=="FALSE" set STATIC_RUNTIME_1=-DUSE_STATIC_MSVC_RUNTIME=1
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\OpenCOLLADA" %STATIC_RUNTIME_1% -DCMAKE_DEBUG_POSTFIX=d ^
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\OpenCOLLADA" -DUSE_STATIC_MSVC_RUNTIME=0 -DCMAKE_DEBUG_POSTFIX=d ^
                -DLIBXML2_LIBRARIES="" -DLIBXML2_INCLUDE_DIR="" -DPCRE_INCLUDE_DIR="" -DPCRE_LIBRARIES=""
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM IF NOT EXIST "%DEPS_DIR%\OpenCOLLADA\%BUILD_DIR%\lib\%DEBUG_OR_RELEASE%\OpenCOLLADASaxFrameworkLoader.lib".
@@ -234,19 +333,13 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-if %IFCOS_USE_OCCT%==FALSE goto :OCE
 :OCCT
 SET OCCT_VER=V%OCCT_VERSION:.=_%
 
-set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
-set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.6.5
-set FREETYPE_ZIP=ft265.zip
+set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.7.1
+set FREETYPE_ZIP=ft271.zip
 cd "%DEPS_DIR%"
 call :DownloadFile http://download.savannah.gnu.org/releases/freetype/%FREETYPE_ZIP% "%DEPS_DIR%" %FREETYPE_ZIP%
 if not %ERRORLEVEL%==0 goto :Error
@@ -276,17 +369,27 @@ if not %ERRORLEVEL%==0 (
 )
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 goto :Error
-OCCT_USE_STATIC_RUNTIME
+
 cd "%DEPENDENCY_DIR%"
-if NOT "%USE_STATIC_RUNTIME%"=="FALSE" set STATIC_RUNTIME_1=-DOCCT_USE_STATIC_RUNTIME=1
 call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\opencascade-%OCCT_VERSION%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
-    -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype" %STATIC_RUNTIME_1%
+    -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype"
 if not %ERRORLEVEL%==0 goto :Error
+
+:: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
+IF %ARCH_BITS%==32 (
+	IF %BUILD_CFG%==Release (
+		SET COMPILE_WITH_WPO=TRUE
+	)
+)
+
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCCT.sln" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
-:: Use a single lib directory for for release and debug libraries as is done with OCE
+
+SET COMPILE_WITH_WPO=FALSE
+
+:: Use a single lib directory for release and debug libraries as is done with OCE
 if not exist "%OCC_LIBRARY_DIR%". mkdir "%OCC_LIBRARY_DIR%"
 :: NOTE OCCT (at least occt-V7_0_0-9059ca1) directory creation code is hardcoded and doesn't seem handle future VC versions
 set OCCT_VC_VER=%VC_VER%
@@ -302,54 +405,16 @@ rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\data"
 rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\samples"
 del "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\*.bat"
 
-goto :Python
-
-:OCE
-set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-
-set DEPENDENCY_NAME=Open CASCADE Community Edition
-set DEPENDENCY_DIR=%DEPS_DIR%\oce
-call :GitCloneAndCheckoutRevision https://github.com/tpaviot/oce.git "%DEPENDENCY_DIR%" %OCE_VERSION%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-:: Use the oce-win-bundle for OCE's dependencies
-call :GitCloneOrPullRepository https://github.com/QbProg/oce-win-bundle.git "%DEPENDENCY_DIR%\oce-win-bundle"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
-cd "%DEPENDENCY_DIR%"
-:: NOTE Specify OCE_NO_LIBRARY_VERSION as rc.exe can fail due to long filenames and huge command-line parameter
-:: input (more than 32,000 characters). Could maybe try using subst for the build dir to overcome this.
-if NOT "%USE_STATIC_RUNTIME%"=="FALSE" set STATIC_RUNTIME_1=-DOCE_USE_STATIC_MSVC_RUNTIME=1
-call :RunCMake  -DOCE_BUILD_SHARED_LIB=0 -DOCE_INSTALL_PREFIX="%INSTALL_DIR%\oce" -DOCE_TESTING=0 ^
-                -DOCE_NO_LIBRARY_VERSION=1 %STATIC_RUNTIME_1%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCE.sln" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
 :Python
-:: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
-:: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
-IF "%IFCOS_USE_PYTHON2%"=="TRUE" set PYTHON_VERSION=2.7.10
-set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
-set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
-set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
-
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
 set PYTHON_AMD64_POSTFIX=.amd64
 :: NOTE/TODO Beginning from 3.5.0: set PYTHON_AMD64_POSTFIX=-amd64
 IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
-set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
 :: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
-IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
-    REM Store Python versions to BuildDepsCache.txt for run-cmake.bat
-    echo PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-    echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
 
+IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     cd "%DEPS_DIR%"
     call :DownloadFile https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER% "%DEPS_DIR%" %PYTHON_INSTALLER%
     IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -370,6 +435,7 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 )
 
 :SWIG
+set SWIG_VERSION=3.0.12
 set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
 set DEPENDENCY_DIR=N/A
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
@@ -385,73 +451,21 @@ IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
 )
 IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swigwin" /E /IS /MOVE /njh /njs
 
-:voxel
-set DEPENDENCY_NAME=voxel
-set DEPENDENCY_DIR=%DEPS_DIR%\voxel
-call :GitCloneAndCheckoutRevision https://github.com/opensourceBIM/voxelization_toolkit.git "%DEPENDENCY_DIR%"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\voxel" ^
-               -DIFC_SUPPORT=Off                            ^
-               -DOCC_INCLUDE_DIR="%OCC_INCLUDE_DIR%"        ^
-               -DOCC_LIBRARY_DIR="%OCC_LIBRARY_DIR%"        ^
-               -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%"  ^
-               -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\voxel.sln" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
-:mpir
-set DEPENDENCY_NAME=mpir
-set DEPENDENCY_DIR=%DEPS_DIR%\mpir
-call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
-git reset --hard
-REM There probably need to be quotes here around the filename
-powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_cxx\"}" | git apply --unidiff-zero
-powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero
-if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch"
-cd msvc
-cd vs%VS_VER:~2,2%
-call .\msbuild.bat gc LIB %VS_PLATFORM% Release
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
-copy ..\..\lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpir"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
-:mpfr
-set DEPENDENCY_NAME=mpfr
-set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
-call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpfr.git "%DEPENDENCY_DIR%"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
-git reset --hard
-powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"}" | git apply --unidiff-zero
-if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch"
-call :BuildSolution "%DEPENDENCY_DIR%\build.vc15\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
-copy lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpfr"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
 :cgal
 set DEPENDENCY_NAME=cgal
 set DEPENDENCY_DIR=%DEPS_DIR%\cgal
-call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" releases/CGAL-4.13.1
+call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" v5.2.3
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 git reset --hard
-git apply "%~dp0patches\cgal_no_zlib.patch"
+git apply --ignore-whitespace "%~dp0patches\cgal_no_zlib.patch"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
                -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%"    ^
                -DGMP_INCLUDE_DIR="%INSTALL_DIR%\mpir"         ^
                -DGMP_LIBRARIES="%INSTALL_DIR%\mpir\mpir.lib"  ^
                -DMPFR_INCLUDE_DIR="%INSTALL_DIR%\mpfr"        ^
                -DMPFR_LIBRARIES="%INSTALL_DIR%\mpfr\mpfr.lib" ^
-               -DBUILD_SHARED_LIBS=On                         ^
+               -DCGAL_HEADER_ONLY=On                          ^
                -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\CGAL.sln" %BUILD_CFG%
@@ -460,13 +474,9 @@ call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :Eigen
-set DEPENDENCY_NAME=eigen
-call :DownloadFile http://bitbucket.org/eigen/eigen/get/3.3.7.zip "%DEPS_DIR%" eigen-eigen-323c052e1731.zip
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive eigen-eigen-323c052e1731.zip "%DEPS_DIR%" "%DEPS_DIR%\eigen"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF NOT EXIST "%INSTALL_DIR%\Eigen\Eigen". mkdir "%INSTALL_DIR%\Eigen\Eigen"
-robocopy /MIR "%DEPS_DIR%\eigen-eigen-323c052e1731\Eigen" "%INSTALL_DIR%\Eigen\Eigen"
+set DEPENDENCY_NAME=Eigen
+set DEPENDENCY_DIR=%INSTALL_DIR%\%DEPENDENCY_NAME%
+call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPENDENCY_DIR%" 3.3.9
 
 :Successful
 echo.
@@ -526,7 +536,7 @@ exit /b %RET%
 :: Params: %1 filename, %2 destinationDir, %3 dirAfterExtraction
 :ExtractArchive
 if not exist "%~3". (
-    call cecho.cmd 0 13 "Extracting %DEPENDENCY_NAME% into %~2."
+    call cecho.cmd 0 13 "Extracting %DEPENDENCY_NAME% into %~2 from %1"
     7za x %1 -y -o%2 > nul
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %~3. Skipping."
@@ -544,6 +554,7 @@ if not exist "%~2". (
     set RET=%ERRORLEVEL%
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned. Pulling latest changes."
+    git reset --hard
     pushd %2
     call git pull
     set RET=0
@@ -559,15 +570,17 @@ if not exist "%~2". (
     call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %~2."
     pushd "%DEPS_DIR%"
     call git clone %1 %2
-    set RET=!ERRORLEVEL!
-    if not !RET!==0 exit /b !RET!
+    set RET=%ERRORLEVEL%
+    if not "%RET%"=="0" exit /b %RET%
     popd
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned."
+    set RET=0
 )
 pushd "%2"
 call git fetch
 call cecho.cmd 0 13 "Checking out %DEPENDENCY_NAME% revision %3."
+call git reset --hard
 call git checkout %3
 set RET=%ERRORLEVEL%
 popd
@@ -584,7 +597,13 @@ pushd %BUILD_DIR%
 :: TODO make deleting cache a parameter for this subroutine? We probably want to delete the 
 :: cache always e.g. when we've had new changes in the repository.
 IF %BUILD_TYPE%==Rebuild IF EXIST CMakeCache.txt. del CMakeCache.txt
-cmake .. -G %GENERATOR% %*
+
+IF NOT "%VS_TOOLSET_HOST%"=="" (
+    cmake .. -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET_HOST% %*
+) ELSE (
+    cmake .. -G %GENERATOR% -A %VS_PLATFORM% %*
+)
+
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
@@ -592,15 +611,26 @@ exit /b %RET%
 :: TODO add BuildCMakeProject which utilizes cmake --build
 
 :: BuildSolution - Builds/Rebuilds/Cleans a solution using MSBuild
-:: Params: %1 solutioName, %2 configuration, %3 individual project name
-:: NOTE: %3 does not account for BUILD_TYPE and probably assumes Build
+:: Params: %1 solutioName, %2 configuration
 :BuildSolution
-call cecho.cmd 0 13 "Building %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
-set TARGET=/t:%BUILD_TYPE%
-IF NOT "%3"=="" (
-    set TARGET=/t:%3
+IF [%~3]==[] (
+    set TARGET=%BUILD_TYPE%
+) ELSE (
+    IF /I %BUILD_TYPE%==Build (
+        set TARGET="%3"
+    ) ELSE (
+        set TARGET="%3:%BUILD_TYPE%"
+    )
 )
-%MSBUILD_CMD% %1 %TARGET% /p:configuration=%2;platform=%VS_PLATFORM%
+
+call cecho.cmd 0 13 "Building %TARGET% of %DEPENDENCY_NAME%. Please be patient, this will take a while."
+
+:: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
+IF %COMPILE_WITH_WPO%==FALSE (
+	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM% /t:"%TARGET%"
+) ELSE (
+	%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE /t:"%TARGET%"
+)
 exit /b %ERRORLEVEL%
 
 :: InstallCMakeProject - Builds the INSTALL project of CMake-based project
@@ -610,7 +640,13 @@ exit /b %ERRORLEVEL%
 :InstallCMakeProject
 pushd %1
 call cecho.cmd 0 13 "Installing %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
-%INSTALL_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%
+
+:: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
+IF %COMPILE_WITH_WPO%==FALSE (
+	%MSBUILD_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%
+) ELSE (
+	%MSBUILD_CMD% INSTALL.%VCPROJ_FILE_EXT% /p:configuration=%2;platform=%VS_PLATFORM%;WholeProgramOptimization=TRUE
+)
 set RET=%ERRORLEVEL%
 popd
 exit /b %RET%
@@ -624,8 +660,10 @@ echo  2. Install Git and make sure 'git' is accessible from PATH.
 echo   - https://git-for-windows.github.io/
 echo  3. Install CMake and make sure 'cmake' is accessible from PATH.
 echo   - http://www.cmake.org/
-echo  4. Visual Studio 2008 or newer (2013 or newer recommended) with C++ toolset.
+echo  4. Visual Studio 2013 or newer with C++ toolset.
 echo   - https://www.visualstudio.com/
 echo  5. Run this batch script with Visual Studio environment variables set.
 echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
+echo.
+echo NB: This script needs to be ran from the directory directly containing it.
 echo.

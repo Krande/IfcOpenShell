@@ -47,6 +47,9 @@
 // TODO add '# pragma warning(pop)' to the very end of the file
 %}
 
+%include "stdint.i"
+%include "std_array.i"
+%include "std_vector.i"
 %include "std_string.i"
 %include "exception.i"
 
@@ -69,18 +72,65 @@
 	}
 }
 
-%module ifcopenshell_wrapper %{
-	#include "../ifcgeom/schema_agnostic/IfcGeomIterator.h"
-	#include "../ifcgeom/schema_agnostic/Serialization.h"
+%include "../serializers/serializers_api.h"
+
+// Include headers for the typemaps to function. This set of includes,
+// can probably be reduced, but for now it's identical to the includes
+// of the module definition below.
+%{
+	#include "../ifcgeom/Iterator.h"
+	#include "../ifcgeom/taxonomy.h"
+#ifdef IFOPSH_WITH_OPENCASCADE
+	#include "../ifcgeom/Serialization/Serialization.h"
 	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
+
+	#include <BRepTools_ShapeSet.hxx>
+#endif
+
+	#include "../serializers/SvgSerializer.h"
+	#include "../serializers/WavefrontObjSerializer.h"
+	#include "../serializers/HdfSerializer.h"
 	
+#ifdef HAS_SCHEMA_2x3
 	#include "../ifcparse/Ifc2x3.h"
+#endif
+#ifdef HAS_SCHEMA_4
 	#include "../ifcparse/Ifc4.h"
+#endif
+#ifdef HAS_SCHEMA_4x1
+	#include "../ifcparse/Ifc4x1.h"
+#endif
+#ifdef HAS_SCHEMA_4x2
+	#include "../ifcparse/Ifc4x2.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc1
+	#include "../ifcparse/Ifc4x3_rc1.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc2
+	#include "../ifcparse/Ifc4x3_rc2.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc3
+#include "../ifcparse/Ifc4x3_rc3.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc4
+#include "../ifcparse/Ifc4x3_rc4.h"
+#endif
+#ifdef HAS_SCHEMA_4x3
+#include "../ifcparse/Ifc4x3.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_tc1
+#include "../ifcparse/Ifc4x3_tc1.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_add1
+#include "../ifcparse/Ifc4x3_add1.h"
+#endif
+
 	#include "../ifcparse/IfcBaseClass.h"
 	#include "../ifcparse/IfcFile.h"
 	#include "../ifcparse/IfcSchema.h"
+	#include "../ifcparse/utils.h"
 
-	#include <BRepTools_ShapeSet.hxx>
+	#include "../svgfill/src/svgfill.h"
 %}
 
 // Create docstrings for generated python code.
@@ -92,5 +142,68 @@
 
 %include "utils/typemaps_out.i"
 
+%module ifcopenshell_wrapper %{
+	#include "../ifcgeom/Converter.h"
+	#include "../ifcgeom/taxonomy.h"
+#ifdef IFOPSH_WITH_OPENCASCADE
+	#include "../ifcgeom/Serialization/Serialization.h"
+	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
+
+	#include <BRepTools_ShapeSet.hxx>
+#endif
+	#include "../ifcgeom/Iterator.h"
+
+	#include "../serializers/SvgSerializer.h"
+	#include "../serializers/WavefrontObjSerializer.h"
+	#include "../serializers/HdfSerializer.h"
+	#include "../serializers/XmlSerializer.h"
+	#include "../serializers/GltfSerializer.h"
+	
+#ifdef HAS_SCHEMA_2x3
+	#include "../ifcparse/Ifc2x3.h"
+#endif
+#ifdef HAS_SCHEMA_4
+	#include "../ifcparse/Ifc4.h"
+#endif
+#ifdef HAS_SCHEMA_4x1
+	#include "../ifcparse/Ifc4x1.h"
+#endif
+#ifdef HAS_SCHEMA_4x2
+	#include "../ifcparse/Ifc4x2.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc1
+	#include "../ifcparse/Ifc4x3_rc1.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc2
+	#include "../ifcparse/Ifc4x3_rc2.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc3
+	#include "../ifcparse/Ifc4x3_rc3.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc4
+	#include "../ifcparse/Ifc4x3_rc4.h"
+#endif
+#ifdef HAS_SCHEMA_4x3
+	#include "../ifcparse/Ifc4x3.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_tc1
+	#include "../ifcparse/Ifc4x3_tc1.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_add1
+	#include "../ifcparse/Ifc4x3_add1.h"
+#endif
+
+	#include "../ifcparse/IfcBaseClass.h"
+	#include "../ifcparse/IfcFile.h"
+	#include "../ifcparse/IfcSchema.h"
+	#include "../ifcparse/utils.h"
+
+	#include "../svgfill/src/svgfill.h"
+%}
+
 %include "IfcGeomWrapper.i"
 %include "IfcParseWrapper.i"
+	
+namespace std {
+  %template(float_array_3) array<double, 3>;
+}

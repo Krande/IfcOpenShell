@@ -32,54 +32,301 @@
 
 #include "ifc_parse_api.h"
 
+#ifdef HAS_SCHEMA_2x3
 #include "../ifcparse/Ifc2x3.h"
+#endif
+#ifdef HAS_SCHEMA_4
 #include "../ifcparse/Ifc4.h"
+#endif
+#ifdef HAS_SCHEMA_4x1
 #include "../ifcparse/Ifc4x1.h"
+#endif
+#ifdef HAS_SCHEMA_4x2
 #include "../ifcparse/Ifc4x2.h"
-
+#endif
+#ifdef HAS_SCHEMA_4x3_rc1
+#include "../ifcparse/Ifc4x3_rc1.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc2
+#include "../ifcparse/Ifc4x3_rc2.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc3
+#include "../ifcparse/Ifc4x3_rc3.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_rc4
+#include "../ifcparse/Ifc4x3_rc4.h"
+#endif
+#ifdef HAS_SCHEMA_4x3
+#include "../ifcparse/Ifc4x3.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_tc1
+#include "../ifcparse/Ifc4x3_tc1.h"
+#endif
+#ifdef HAS_SCHEMA_4x3_add1
+#include "../ifcparse/Ifc4x3_add1.h"
+#endif
 
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcWrite.h"
 #include "../ifcparse/IfcGlobalId.h"
 
 namespace {
+#ifdef HAS_SCHEMA_2x3
+	Ifc2x3::IfcObjectDefinition* get_parent_of_relation(Ifc2x3::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatingStructure();
+	}
+
+	aggregate_of_instance::ptr get_children_of_relation(Ifc2x3::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatedElements()->generalize();
+	}
+
+	aggregate_of_instance::ptr get_children_of_relation(Ifc2x3::IfcRelAggregates* t) {
+		return t->RelatedObjects()->generalize();
+	}
+
+	void set_children_of_relation(Ifc2x3::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+		t->setRelatedElements(cs->as<Ifc2x3::IfcProduct>());
+	}
+
+	void set_children_of_relation(Ifc2x3::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+		t->setRelatedObjects(cs->as<Ifc2x3::IfcObjectDefinition>());
+	}
+#endif
+
+#ifdef HAS_SCHEMA_4
+	Ifc4::IfcObjectDefinition* get_parent_of_relation(Ifc4::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatingStructure();
+	}
+
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatedElements()->generalize();
+	}
+
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4::IfcRelAggregates* t) {
+		return t->RelatedObjects()->generalize();
+	}
+
+	void set_children_of_relation(Ifc4::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+		t->setRelatedElements(cs->as<Ifc4::IfcProduct>());
+	}
+
+	void set_children_of_relation(Ifc4::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+		t->setRelatedObjects(cs->as<Ifc4::IfcObjectDefinition>());
+	}
+#endif
+
+#ifdef HAS_SCHEMA_4x1
+	Ifc4x1::IfcObjectDefinition* get_parent_of_relation(Ifc4x1::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatingStructure();
+	}
+
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x1::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatedElements()->generalize();
+	}
+
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x1::IfcRelAggregates* t) {
+		return t->RelatedObjects()->generalize();
+	}
+
+	void set_children_of_relation(Ifc4x1::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+		t->setRelatedElements(cs->as<Ifc4x1::IfcProduct>());
+	}
+
+	void set_children_of_relation(Ifc4x1::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+		t->setRelatedObjects(cs->as<Ifc4x1::IfcObjectDefinition>());
+	}
+#endif
+
+#ifdef HAS_SCHEMA_4x2
+	Ifc4x2::IfcObjectDefinition* get_parent_of_relation(Ifc4x2::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatingStructure();
+	}
+
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x2::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatedElements()->generalize();
+	}
+
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x2::IfcRelAggregates* t) {
+		return t->RelatedObjects()->generalize();
+	}
+
+	void set_children_of_relation(Ifc4x2::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+		t->setRelatedElements(cs->as<Ifc4x2::IfcProduct>());
+	}
+
+	void set_children_of_relation(Ifc4x2::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+		t->setRelatedObjects(cs->as<Ifc4x2::IfcObjectDefinition>());
+	}
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc1
+	Ifc4x3_rc1::IfcObjectDefinition* get_parent_of_relation(Ifc4x3_rc1::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatingStructure();
+	}
+
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc1::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatedElements()->generalize();
+	}
+
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc1::IfcRelAggregates* t) {
+		return t->RelatedObjects()->generalize();
+	}
+
+	void set_children_of_relation(Ifc4x3_rc1::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+		t->setRelatedElements(cs->as<Ifc4x3_rc1::IfcProduct>());
+	}
+
+	void set_children_of_relation(Ifc4x3_rc1::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+		t->setRelatedObjects(cs->as<Ifc4x3_rc1::IfcObjectDefinition>());
+	}
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc2
+	Ifc4x3_rc2::IfcObjectDefinition* get_parent_of_relation(Ifc4x3_rc2::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatingStructure();
+	}
+
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc2::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatedElements()->generalize();
+	}
+
+	aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc2::IfcRelAggregates* t) {
+		return t->RelatedObjects()->generalize();
+	}
+
+	void set_children_of_relation(Ifc4x3_rc2::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+		t->setRelatedElements(cs->as<Ifc4x3_rc2::IfcProduct>());
+	}
+
+	void set_children_of_relation(Ifc4x3_rc2::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+		t->setRelatedObjects(cs->as<Ifc4x3_rc2::IfcObjectDefinition>());
+	}
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc3
+   Ifc4x3_rc3::IfcObjectDefinition* get_parent_of_relation(Ifc4x3_rc3::IfcRelContainedInSpatialStructure* t) {
+      return t->RelatingStructure();
+   }
+
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc3::IfcRelContainedInSpatialStructure* t) {
+      return t->RelatedElements()->generalize();
+   }
+
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc3::IfcRelAggregates* t) {
+      return t->RelatedObjects()->generalize();
+   }
+
+   void set_children_of_relation(Ifc4x3_rc3::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+      t->setRelatedElements(cs->as<Ifc4x3_rc3::IfcProduct>());
+   }
+
+   void set_children_of_relation(Ifc4x3_rc3::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+      t->setRelatedObjects(cs->as<Ifc4x3_rc3::IfcObjectDefinition>());
+   }
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc4
+   Ifc4x3_rc4::IfcObjectDefinition* get_parent_of_relation(Ifc4x3_rc4::IfcRelContainedInSpatialStructure* t) {
+      return t->RelatingStructure();
+   }
+
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc4::IfcRelContainedInSpatialStructure* t) {
+      return t->RelatedElements()->generalize();
+   }
+
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_rc4::IfcRelAggregates* t) {
+      return t->RelatedObjects()->generalize();
+   }
+
+   void set_children_of_relation(Ifc4x3_rc4::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+      t->setRelatedElements(cs->as<Ifc4x3_rc4::IfcProduct>());
+   }
+
+   void set_children_of_relation(Ifc4x3_rc4::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+      t->setRelatedObjects(cs->as<Ifc4x3_rc4::IfcObjectDefinition>());
+   }
+#endif
+
+#ifdef HAS_SCHEMA_4x3
+   Ifc4x3::IfcObjectDefinition* get_parent_of_relation(Ifc4x3::IfcRelContainedInSpatialStructure* t) {
+	   return t->RelatingStructure();
+   }
+
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3::IfcRelContainedInSpatialStructure* t) {
+	   return t->RelatedElements()->generalize();
+   }
+
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3::IfcRelAggregates* t) {
+	   return t->RelatedObjects()->generalize();
+   }
+
+   void set_children_of_relation(Ifc4x3::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+	   t->setRelatedElements(cs->as<Ifc4x3::IfcProduct>());
+   }
+
+   void set_children_of_relation(Ifc4x3::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+	   t->setRelatedObjects(cs->as<Ifc4x3::IfcObjectDefinition>());
+   }
+#endif
+
+#ifdef HAS_SCHEMA_4x3_tc1
+   Ifc4x3_tc1::IfcObjectDefinition* get_parent_of_relation(Ifc4x3_tc1::IfcRelContainedInSpatialStructure* t) {
+	   return t->RelatingStructure();
+   }
+
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_tc1::IfcRelContainedInSpatialStructure* t) {
+	   return t->RelatedElements()->generalize();
+   }
+
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_tc1::IfcRelAggregates* t) {
+	   return t->RelatedObjects()->generalize();
+   }
+
+   void set_children_of_relation(Ifc4x3_tc1::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+	   t->setRelatedElements(cs->as<Ifc4x3_tc1::IfcProduct>());
+   }
+
+   void set_children_of_relation(Ifc4x3_tc1::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+	   t->setRelatedObjects(cs->as<Ifc4x3_tc1::IfcObjectDefinition>());
+   }
+#endif
+
+#ifdef HAS_SCHEMA_4x3_add1
+   Ifc4x3_add1::IfcObjectDefinition* get_parent_of_relation(Ifc4x3_add1::IfcRelContainedInSpatialStructure* t) {
+	   return t->RelatingStructure();
+   }
+
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_add1::IfcRelContainedInSpatialStructure* t) {
+	   return t->RelatedElements()->generalize();
+   }
+
+   aggregate_of_instance::ptr get_children_of_relation(Ifc4x3_add1::IfcRelAggregates* t) {
+	   return t->RelatedObjects()->generalize();
+   }
+
+   void set_children_of_relation(Ifc4x3_add1::IfcRelContainedInSpatialStructure* t, aggregate_of_instance::ptr& cs) {
+	   t->setRelatedElements(cs->as<Ifc4x3_add1::IfcProduct>());
+   }
+
+   void set_children_of_relation(Ifc4x3_add1::IfcRelAggregates* t, aggregate_of_instance::ptr& cs) {
+	   t->setRelatedObjects(cs->as<Ifc4x3_add1::IfcObjectDefinition>());
+   }
+#endif
+
+
 	IfcUtil::IfcBaseClass* get_parent_of_relation(IfcUtil::IfcBaseClass* t) {
 		return *t->data().getArgument(
 			t->declaration().as_entity()->attribute_index("RelatingObject")
 		);
 	}
 
-	Ifc2x3::IfcObjectDefinition* get_parent_of_relation(Ifc2x3::IfcRelContainedInSpatialStructure* t) {
-		return t->RelatingStructure();
-	}
-
-	Ifc4::IfcObjectDefinition* get_parent_of_relation(Ifc4::IfcRelContainedInSpatialStructure* t) {
-		return t->RelatingStructure();
-	}
-
-	Ifc4x1::IfcObjectDefinition* get_parent_of_relation(Ifc4x1::IfcRelContainedInSpatialStructure* t) {
-		return t->RelatingStructure();
-	}
-
-	Ifc4x2::IfcObjectDefinition* get_parent_of_relation(Ifc4x2::IfcRelContainedInSpatialStructure* t) {
-		return t->RelatingStructure();
-	}
-
-	IfcEntityList::ptr get_children_of_relation(IfcUtil::IfcBaseClass* t) {
+	aggregate_of_instance::ptr get_children_of_relation(IfcUtil::IfcBaseClass* t) {
 		return *t->data().getArgument(
 			t->declaration().as_entity()->attribute_index("RelatedElements")
 			);
-	}
+	}	
 
-	IfcEntityList::ptr get_children_of_relation(Ifc2x3::IfcRelContainedInSpatialStructure* t) {
-		return t->RelatedElements()->generalize();
-	}
-
-	IfcEntityList::ptr get_children_of_relation(Ifc4::IfcRelContainedInSpatialStructure* t) {
-		return t->RelatedElements()->generalize();
-	}
-
-	void set_children_of_relation(IfcUtil::IfcBaseClass* t, IfcEntityList::ptr& cs) {
+	void set_children_of_relation(IfcUtil::IfcBaseClass* t, aggregate_of_instance::ptr& cs) {
 		IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument;
 		attr->set(cs);
 		t->data().setArgument(
@@ -87,19 +334,12 @@ namespace {
 			attr
 		);
 	}
-
-	void set_children_of_relation(Ifc2x3::IfcRelContainedInSpatialStructure* t, IfcEntityList::ptr& cs) {
-		t->setRelatedElements(cs->as<Ifc2x3::IfcProduct>());
-	}
-
-	void set_children_of_relation(Ifc4::IfcRelContainedInSpatialStructure* t, IfcEntityList::ptr& cs) {
-		t->setRelatedElements(cs->as<Ifc4::IfcProduct>());
-	}
 }
-
 template <typename Schema>
 class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
 public:
+	IfcHierarchyHelper() : IfcParse::IfcFile(&Schema::get_schema()) {}
+
 	template <class T> 
 	T* addTriplet(double x, double y, double z) {
 		std::vector<double> a; a.push_back(x); a.push_back(y); a.push_back(z);
@@ -143,12 +383,18 @@ public:
 		bool found = false;
 		for (typename T::list::it i = li->begin(); i != li->end(); ++i) {
 			T* rel = *i;
-			if (get_parent_of_relation(rel) == relating_object) {
-				IfcEntityList::ptr products = get_children_of_relation(rel);
-				products->push(related_object);
-				set_children_of_relation(rel, products);
-				found = true;
-				break;
+            try {
+                if (get_parent_of_relation(rel) == relating_object) {
+                    aggregate_of_instance::ptr products = get_children_of_relation(rel);
+                    products->push(related_object);
+                    set_children_of_relation(rel, products);
+                    found = true;
+                    break;
+                }
+            } catch (std::exception& e) {
+				Logger::Error(e);
+			} catch (...) {
+				Logger::Error("Unknown error in addRelatedObject()");
 			}
 		}
 		if (! found) {
@@ -159,7 +405,7 @@ public:
 				owner_hist = addOwnerHistory();
 			}
 
-			IfcEntityList::ptr related_objects (new IfcEntityList);
+			aggregate_of_instance::ptr related_objects (new aggregate_of_instance);
 			related_objects->push(related_object);
 
 			IfcEntityInstanceData* data = new IfcEntityInstanceData(&T::Class());
@@ -215,20 +461,6 @@ public:
 	void clipRepresentation(typename Schema::IfcRepresentation* shape, 
 		typename Schema::IfcAxis2Placement3D* place, bool agree);
 
-	typename Schema::IfcPresentationStyleAssignment* addStyleAssignment(double r, double g, double b, double a=1.0);
-
-	typename Schema::IfcPresentationStyleAssignment* setSurfaceColour(typename Schema::IfcProductRepresentation* shape, 
-		double r, double g, double b, double a=1.0);
-
-	typename Schema::IfcPresentationStyleAssignment* setSurfaceColour(typename Schema::IfcRepresentation* shape, 
-		double r, double g, double b, double a=1.0);
-
-	void setSurfaceColour(typename Schema::IfcProductRepresentation* shape, 
-		typename Schema::IfcPresentationStyleAssignment* style_assignment);
-
-	void setSurfaceColour(typename Schema::IfcRepresentation* shape, 
-		typename Schema::IfcPresentationStyleAssignment* style_assignment);
-
 	typename Schema::IfcProductDefinitionShape* addMappedItem(typename Schema::IfcShapeRepresentation*, 
 		typename Schema::IfcCartesianTransformationOperator3D* transform = 0,
 		typename Schema::IfcProductDefinitionShape* def = 0);
@@ -243,6 +475,94 @@ public:
 private:
 	std::map<std::string, typename Schema::IfcGeometricRepresentationContext*> contexts;
 };
+
+#ifdef HAS_SCHEMA_2x3
+IFC_PARSE_API Ifc2x3::IfcPresentationStyleAssignment* addStyleAssignment(IfcHierarchyHelper<Ifc2x3>& file, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc2x3::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, Ifc2x3::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc2x3::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, Ifc2x3::IfcRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, Ifc2x3::IfcProductRepresentation* shape, Ifc2x3::IfcPresentationStyleAssignment* style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc2x3>& file, Ifc2x3::IfcRepresentation* shape, Ifc2x3::IfcPresentationStyleAssignment* style_assignment);
+#endif
+
+#ifdef HAS_SCHEMA_4
+IFC_PARSE_API Ifc4::IfcPresentationStyleAssignment* addStyleAssignment(IfcHierarchyHelper<Ifc4>& file, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, Ifc4::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, Ifc4::IfcRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, Ifc4::IfcProductRepresentation* shape, Ifc4::IfcPresentationStyleAssignment* style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4>& file, Ifc4::IfcRepresentation* shape, Ifc4::IfcPresentationStyleAssignment* style_assignment);
+#endif
+
+#ifdef HAS_SCHEMA_4x1
+IFC_PARSE_API Ifc4x1::IfcPresentationStyleAssignment* addStyleAssignment(IfcHierarchyHelper<Ifc4x1>& file, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x1::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, Ifc4x1::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x1::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, Ifc4x1::IfcRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, Ifc4x1::IfcProductRepresentation* shape, Ifc4x1::IfcPresentationStyleAssignment* style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x1>& file, Ifc4x1::IfcRepresentation* shape, Ifc4x1::IfcPresentationStyleAssignment* style_assignment);
+#endif
+
+#ifdef HAS_SCHEMA_4x2
+IFC_PARSE_API Ifc4x2::IfcPresentationStyleAssignment* addStyleAssignment(IfcHierarchyHelper<Ifc4x2>& file, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x2::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, Ifc4x2::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x2::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, Ifc4x2::IfcRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, Ifc4x2::IfcProductRepresentation* shape, Ifc4x2::IfcPresentationStyleAssignment* style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x2>& file, Ifc4x2::IfcRepresentation* shape, Ifc4x2::IfcPresentationStyleAssignment* style_assignment);
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc1
+IFC_PARSE_API Ifc4x3_rc1::IfcPresentationStyleAssignment* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_rc1>& file, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_rc1::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, Ifc4x3_rc1::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_rc1::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, Ifc4x3_rc1::IfcRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, Ifc4x3_rc1::IfcProductRepresentation* shape, Ifc4x3_rc1::IfcPresentationStyleAssignment* style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc1>& file, Ifc4x3_rc1::IfcRepresentation* shape, Ifc4x3_rc1::IfcPresentationStyleAssignment* style_assignment);
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc2
+IFC_PARSE_API Ifc4x3_rc2::IfcPresentationStyleAssignment* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_rc2>& file, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_rc2::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, Ifc4x3_rc2::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_rc2::IfcPresentationStyleAssignment* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, Ifc4x3_rc2::IfcRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, Ifc4x3_rc2::IfcProductRepresentation* shape, Ifc4x3_rc2::IfcPresentationStyleAssignment* style_assignment);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc2>& file, Ifc4x3_rc2::IfcRepresentation* shape, Ifc4x3_rc2::IfcPresentationStyleAssignment* style_assignment);
+#endif
+
+#ifdef HAS_SCHEMA_4x3_rc3
+IFC_PARSE_API Ifc4x3_rc3::IfcPresentationStyle* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_rc3>& file, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_rc3::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, Ifc4x3_rc3::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_rc3::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, Ifc4x3_rc3::IfcRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, Ifc4x3_rc3::IfcProductRepresentation* shape, Ifc4x3_rc3::IfcPresentationStyle* style);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc3>& file, Ifc4x3_rc3::IfcRepresentation* shape, Ifc4x3_rc3::IfcPresentationStyle* style);
+#endif 
+
+#ifdef HAS_SCHEMA_4x3_rc4
+IFC_PARSE_API Ifc4x3_rc4::IfcPresentationStyle* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_rc4>& file, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_rc4::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, Ifc4x3_rc4::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_rc4::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, Ifc4x3_rc4::IfcRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, Ifc4x3_rc4::IfcProductRepresentation* shape, Ifc4x3_rc4::IfcPresentationStyle* style);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_rc4>& file, Ifc4x3_rc4::IfcRepresentation* shape, Ifc4x3_rc4::IfcPresentationStyle* style);
+#endif
+
+#ifdef HAS_SCHEMA_4x3
+IFC_PARSE_API Ifc4x3::IfcPresentationStyle* addStyleAssignment(IfcHierarchyHelper<Ifc4x3>& file, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, Ifc4x3::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, Ifc4x3::IfcRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, Ifc4x3::IfcProductRepresentation* shape, Ifc4x3::IfcPresentationStyle* style);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3>& file, Ifc4x3::IfcRepresentation* shape, Ifc4x3::IfcPresentationStyle* style);
+#endif
+
+#ifdef HAS_SCHEMA_4x3_tc1
+IFC_PARSE_API Ifc4x3_tc1::IfcPresentationStyle* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_tc1>& file, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_tc1::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, Ifc4x3_tc1::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_tc1::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, Ifc4x3_tc1::IfcRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, Ifc4x3_tc1::IfcProductRepresentation* shape, Ifc4x3_tc1::IfcPresentationStyle* style);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_tc1>& file, Ifc4x3_tc1::IfcRepresentation* shape, Ifc4x3_tc1::IfcPresentationStyle* style);
+#endif
+
+#ifdef HAS_SCHEMA_4x3_add1
+IFC_PARSE_API Ifc4x3_add1::IfcPresentationStyle* addStyleAssignment(IfcHierarchyHelper<Ifc4x3_add1>& file, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_add1::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcProductRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API Ifc4x3_add1::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcRepresentation* shape, double r, double g, double b, double a = 1.0);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcProductRepresentation* shape, Ifc4x3_add1::IfcPresentationStyle* style);
+IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcRepresentation* shape, Ifc4x3_add1::IfcPresentationStyle* style);
+#endif
 
 /*
 template <>
@@ -268,7 +588,7 @@ inline void IfcHierarchyHelper::addRelatedObject <typename Schema::IfcRelContain
 		if (! owner_hist) {
 			owner_hist = addOwnerHistory();
 		}
-		typename Schema::IfcProduct::list::ptr related_objects (new IfcTemplatedEntityList<typename Schema::IfcProduct>());
+		typename Schema::IfcProduct::list::ptr related_objects (new aggregate_of<typename Schema::IfcProduct>());
 		related_objects->push((typename Schema::IfcProduct*)related_object);
 		typename Schema::IfcRelContainedInSpatialStructure* t = new typename Schema::IfcRelContainedInSpatialStructure(IfcParse::IfcGlobalId(), owner_hist, 
 			boost::none, boost::none, related_objects, (typename Schema::IfcSpatialStructureElement*)relating_structure);
@@ -300,7 +620,7 @@ inline void IfcHierarchyHelper::addRelatedObject <typename Schema::IfcRelDefines
 		if (! owner_hist) {
 			owner_hist = addOwnerHistory();
 		}
-		typename Schema::IfcObject::list::ptr related_objects (new IfcTemplatedEntityList<typename Schema::IfcObject>());
+		typename Schema::IfcObject::list::ptr related_objects (new aggregate_of<typename Schema::IfcObject>());
 		related_objects->push((typename Schema::IfcObject*)related_object);
 		typename Schema::IfcRelDefinesByType* t = new typename Schema::IfcRelDefinesByType(IfcParse::IfcGlobalId(), owner_hist, 
 			boost::none, boost::none, related_objects, (typename Schema::IfcTypeObject*)relating_type);

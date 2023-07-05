@@ -24,6 +24,9 @@
  *                                                                              *
  ********************************************************************************/
 
+#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
+
 #include <iostream>
 #include <boost/cstdint.hpp>
 
@@ -38,32 +41,24 @@
 #include <fcntl.h>
 #endif
 
-#include "../ifcgeom/schema_agnostic/IfcGeomIterator.h"
-#include "../ifcgeom/schema_agnostic/IfcGeomElement.h"
+#include "../ifcgeom/Iterator.h"
+#include "../ifcgeom/IfcGeomElement.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcLogger.h"
+
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 #if USE_VLD
 #include <vld.h>
 #endif
-
-#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>
 #include <BRepBndLib.hxx>
 #include <Bnd_Box.hxx>
 #include <Geom_Plane.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Compound.hxx>
 
 #include <memory>
-
-#ifdef USE_VOXELS
-#include <voxel/storage.h>
-#include <voxel/traversal.h>
-#include <voxel/processor.h>
-#endif
 
 template <typename T>
 union data_field {
@@ -297,7 +292,7 @@ public:
 
 class Entity : public Command {
 private:
-	const IfcGeom::TriangulationElement<double, double>* geom;
+	const IfcGeom::TriangulationElement* geom;
 	bool append_line_data;
 	EntityExtension* eext_;
 protected:
@@ -308,12 +303,12 @@ protected:
 		swrite(s, geom->name());
 		swrite(s, geom->type());
 		swrite<int32_t>(s, geom->parent_id());
-		const std::vector<double>& m = geom->transformation().matrix().data();
+		const auto& m = geom->transformation().data().ccomponents();
 		const double matrix_array[16] = {
-			m[0], m[3], m[6], m[ 9],
-			m[1], m[4], m[7], m[10],
-			m[2], m[5], m[8], m[11],
-			   0,    0,    0,     1
+			m(0,0), m(0,1), m(0,2), m(0,3),
+			m(1,0), m(1,1), m(1,2), m(1,3),
+			m(2,0), m(2,1), m(2,2), m(2,3),
+			m(3,0),	m(3,1),	m(3,2),	m(3,3)
 		};
 		swrite(s, std::string((char*)matrix_array, 16 * sizeof(double)));
 		
@@ -354,37 +349,59 @@ protected:
 				swrite_array<int32_t>(s, lines);
 			}
 		}
-		{ std::vector<float> diffuse_color_array;
-		for (std::vector<IfcGeom::Material>::const_iterator it = geom->geometry().materials().begin(); it != geom->geometry().materials().end(); ++it) {
-			const IfcGeom::Material& mat = *it;
-			if (mat.hasDiffuse()) {
-				const double* color = mat.diffuse();
-				diffuse_color_array.push_back(static_cast<float>(color[0]));
-				diffuse_color_array.push_back(static_cast<float>(color[1]));
-				diffuse_color_array.push_back(static_cast<float>(color[2]));
-			} else {
-				diffuse_color_array.push_back(0.f);
-				diffuse_color_array.push_back(0.f);
-				diffuse_color_array.push_back(0.f);
+		{ 
+			// We remove the blanks here from the material array. I.e. materials without a diffuse color
+			std::vector<boost::optional<std::array<float, 4> > > diffuse_color_array;
+			for (auto it = geom->geometry().materials().begin(); it != geom->geometry().materials().end(); ++it) {
+				const auto& mat = *it;
+				if (mat.diffuse) {
+					const auto& color = mat.diffuse.ccomponents();
+					diffuse_color_array.push_back(std::array<float, 4>{
+						static_cast<float>(color(0)),
+						static_cast<float>(color(1)),
+						static_cast<float>(color(2)),
+						mat.transparency == mat.transparency ? static_cast<float>(1. - mat.transparency) : 1.f
+					});
+				} else {
+					diffuse_color_array.emplace_back();
+				}
 			}
-			if (mat.hasTransparency()) {
-				diffuse_color_array.push_back(static_cast<float>(1. - mat.transparency()));
-			} else {
-				diffuse_color_array.push_back(1.f);
+
+			std::map<int, int> orig_to_condensed_index_map;
+			std::vector<float> diffuse_color_array_condensed;
+			
+			int new_index = 0;
+			for (size_t orig = 0; orig < diffuse_color_array.size(); ++orig) {
+				auto& m = diffuse_color_array[orig];
+				if (m) {
+					for (int i = 0; i < 4; ++i) {
+						diffuse_color_array_condensed.push_back((*m)[i]);
+					}
+					orig_to_condensed_index_map[orig] = new_index++;
+				}
 			}
+
+			swrite(s, std::string((char*) diffuse_color_array_condensed.data(), diffuse_color_array_condensed.size() * sizeof(float)));
+
+			std::vector<int32_t> material_indices;
+			for (std::vector<int>::const_iterator it = geom->geometry().material_ids().begin(); it != geom->geometry().material_ids().end(); ++it) {
+				// @todo use something like std::equal_range() ?
+				auto jt = orig_to_condensed_index_map.find(*it);
+				if (jt == orig_to_condensed_index_map.end()) {
+					material_indices.push_back(-1);
+				} else {
+					material_indices.push_back(jt->second);
+				}
+			}
+
+			swrite(s, std::string((char*) material_indices.data(), material_indices.size() * sizeof(int32_t)));
 		}
-		swrite(s, std::string((char*) diffuse_color_array.data(), diffuse_color_array.size() * sizeof(float))); }
-		{ std::vector<int32_t> material_indices;
-		for (std::vector<int>::const_iterator it = geom->geometry().material_ids().begin(); it != geom->geometry().material_ids().end(); ++it) {
-			material_indices.push_back(*it);
-		} 
-		swrite(s, std::string((char*) material_indices.data(), material_indices.size() * sizeof(int32_t))); }
 		if (eext_) {
 			eext_->write_contents(s);
 		}
 	}
 public:
-	Entity(const IfcGeom::TriangulationElement<double, double>* geom, EntityExtension* eext = 0) : Command(ENTITY), geom(geom), append_line_data(false), eext_(eext) {};
+	Entity(const IfcGeom::TriangulationElement* geom, EntityExtension* eext = 0) : Command(ENTITY), geom(geom), append_line_data(false), eext_(eext) {};
 };
 
 class Next : public Command {
@@ -450,9 +467,9 @@ static const std::array<std::string, 3> XYZ = { "X", "Y", "Z" };
 
 class QuantityWriter_v0 : public EntityExtension {
 private:
-	const IfcGeom::NativeElement<double, double>* elem_;
+	const IfcGeom::BRepElement* elem_;
 public:
-	QuantityWriter_v0(const IfcGeom::NativeElement<double, double>* elem) :
+	QuantityWriter_v0(const IfcGeom::BRepElement* elem) :
 		elem_(elem) 
 	{
 		put_json(TOTAL_SURFACE_AREA, 0.);
@@ -465,20 +482,19 @@ public:
 
 class QuantityWriter_v1 : public EntityExtension {
 private:
-	const IfcGeom::NativeElement<double, double>* elem_;
+	const IfcGeom::BRepElement* elem_;
 public:
-	QuantityWriter_v1(const IfcGeom::NativeElement<double, double>* elem) :
-		elem_(elem)
-	{
+	QuantityWriter_v1(const IfcGeom::BRepElement* elem) :
+		elem_(elem) {
 		double a, b, c, largest_face_area = 0.;
 
 		if (elem_->geometry().calculate_surface_area(a)) {
 			put_json(TOTAL_SURFACE_AREA, a);
 		}
 
-		TopoDS_Compound compound = TopoDS::Compound(((IfcGeom::OpenCascadeShape*) elem_->geometry().as_compound(true))->shape());
-		double bbox_xyz[6];
-		bool has_boundingbox = false;
+		if (elem_->geometry().calculate_volume(a)) {
+			put_json(TOTAL_SHAPE_VOLUME, a);
+		}
 
 		if (elem_->calculate_projected_surface_area(a, b, c)) {
 			put_json(SURFACE_AREA_ALONG_X, a);
@@ -489,6 +505,9 @@ public:
 		boost::optional<gp_Dir> largest_face_dir;
 
 		{
+			auto shp = elem_->geometry().as_compound(true);
+			auto compound = ((ifcopenshell::geometry::OpenCascadeShape*)shp)->shape();
+			delete shp;
 			TopExp_Explorer exp(compound, TopAbs_FACE);
 			for (; exp.More(); exp.Next()) {
 				GProp_GProps prop;
@@ -508,49 +527,18 @@ public:
 			}
 
 			Bnd_Box box;
+			double xyz[6];
 
 			BRepBndLib::AddClose(compound, box);
 
 			if (!box.IsVoid()) {
-				has_boundingbox = true;
-				box.Get(bbox_xyz[0], bbox_xyz[1], bbox_xyz[2], bbox_xyz[3], bbox_xyz[4], bbox_xyz[5]);
+				box.Get(xyz[0], xyz[1], xyz[2], xyz[3], xyz[4], xyz[5]);
 				for (int i = 0; i < 3; ++i) {
-					const double bsz = bbox_xyz[i + 3] - bbox_xyz[i];
+					const double bsz = xyz[i + 3] - xyz[i];
 					put_json(BOUNDING_BOX_SIZE_ALONG_ + XYZ[i], bsz);
 				}
 			}
 		}
-
-		if (elem_->geometry().calculate_volume(a)) {
-			put_json(TOTAL_SHAPE_VOLUME, a);
-		}
-#ifdef USE_VOXELS
-		// Sometimes geometries are not a topologically valid manifold,
-		// but still (approximately) enclose a volume. In this case
-		// we can voxlize the geometry and fill the interior solid volume.
-		else if (has_boundingbox) {
-			std::array< vec_n<3, double>, 2 > bounds;
-			for (int i = 0; i < 3; ++i) {
-				bounds[0].get(i) = bbox_xyz[i + 0];
-				bounds[1].get(i) = bbox_xyz[i + 3];
-			}
-			progress_writer silent;
-			auto surface = storage_for(bounds, 256U);
-			processor proc(surface, silent);
-			std::vector<std::pair<int, TopoDS_Compound > > geometries = { {1, compound} };
-			proc.process(geometries.begin(), geometries.end(), SURFACE(), output(MERGED()));
-			surface = (regular_voxel_storage*) proc.voxels();
-			double vsize = surface->voxel_size();
-			auto surface_count = surface->count();
-			traversal_voxel_filler_inverse filler;
-			auto volume = filler(surface);
-			auto volume_count = volume->count();
-			delete surface;
-			delete volume;
-			double total_volume = (volume_count + surface_count / 2) * (vsize * vsize * vsize);
-			put_json(TOTAL_SHAPE_VOLUME, total_volume);
-		}
-#endif
 
 		if (largest_face_dir) {
 			put_json(LARGEST_FACE_DIRECTION, *largest_face_dir);
@@ -579,7 +567,7 @@ int main () {
 	double deflection = 1.e-3;
 	bool has_more = false;
 
-	IfcGeom::Iterator<double, double>* iterator = 0;
+	IfcGeom::Iterator* iterator = 0;
 	IfcParse::IfcFile* file = 0;
 	std::vector< std::pair<uint32_t, uint32_t> > setting_pairs;
 
@@ -614,7 +602,7 @@ int main () {
 			settings.set_deflection_tolerance(deflection);
 
 			file = new IfcParse::IfcFile(data, (int)len);
-			iterator = new IfcGeom::Iterator<double, double>(settings, file);
+			iterator = new IfcGeom::Iterator(settings, file);
 			has_more = iterator->initialize();
 
 			More(has_more).write(std::cout);
@@ -626,7 +614,7 @@ int main () {
 				exit_code = 1;
 				break;
 			}
-			const IfcGeom::TriangulationElement<double, double>* geom = static_cast<const IfcGeom::TriangulationElement<double, double>*>(iterator->get());
+			const IfcGeom::TriangulationElement* geom = static_cast<const IfcGeom::TriangulationElement*>(iterator->get());
 			std::unique_ptr<EntityExtension> eext;
 			if (emit_quantities) {
 				eext.reset(new QuantityWriter_v1(iterator->get_native()));

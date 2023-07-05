@@ -36,6 +36,7 @@ private:
 	HeaderEntity& operator =(const HeaderEntity&); //N/A
 protected:
 	HeaderEntity(const char * const datatype, size_t size, IfcParse::IfcFile* file);
+	virtual ~HeaderEntity();
 
 	void setValue(unsigned int i, const std::string& s) {
 		IfcWrite::IfcWriteArgument* argument = new IfcWrite::IfcWriteArgument;
@@ -50,7 +51,7 @@ protected:
 	}
 
 public:
-	virtual unsigned int getArgumentCount() const {
+	virtual size_t getArgumentCount() const {
 		return size_;
 	}
 

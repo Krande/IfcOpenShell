@@ -3,13 +3,25 @@
 using namespace ifcopenshell::geometry::taxonomy;
 
 namespace {
+	bool compare(const trimmed_curve& a, const trimmed_curve& b);
+
+	bool compare(const collection& a, const collection& b);
+
 	template <typename T>
 	bool compare(const eigen_base<T>& t, const eigen_base<T>& u) {
-		auto t_begin = t.components->data();
-		auto t_end = t.components->data() + t.components->size();
+		if (t.components_ == nullptr && u.components_ == nullptr) {
+			return false;
+		} else if (t.components_ == nullptr && u.components_ != nullptr) {
+			return true;
+		} else if (t.components_ != nullptr && u.components_ == nullptr) {
+			return false;
+		}
 
-		auto u_begin = u.components->data();
-		auto u_end = u.components->data() + u.components->size();
+		auto t_begin = t.components_->data();
+		auto t_end = t.components_->data() + t.components_->size();
+
+		auto u_begin = u.components_->data();
+		auto u_end = u.components_->data() + u.components_->size();
 
 		return std::lexicographical_compare(t_begin, t_end, u_begin, u_end);
 	}
@@ -84,10 +96,6 @@ namespace {
 			-1 : (!b_lt_a ? 0 : 1);
 	}
 
-	bool compare(const trimmed_curve& a, const trimmed_curve& b);
-
-	bool compare(const collection& a, const collection& b);
-
 	bool compare(const extrusion& a, const extrusion& b) {
 		// @todo extrusions can also have non-identity matrices right? perhaps it's time
 		//       for a dedicated transform node and not on the abstract geom_item.
@@ -101,13 +109,37 @@ namespace {
 		return *it == -1;
 	}
 
+	bool compare(const node&, const node&) {
+		throw std::runtime_error("not implemented");
+	}
+
+	bool compare(const offset_curve&, const offset_curve&) {
+		throw std::runtime_error("not implemented");
+	}
+
+	bool compare(const revolve&, const revolve&) {
+		throw std::runtime_error("not implemented");
+	}
+
+	bool compare(const bspline_surface&, const bspline_surface&) {
+		throw std::runtime_error("not implemented");
+	}
+
+	bool compare(const cylinder&, const cylinder&) {
+		throw std::runtime_error("not implemented");
+	}
+
+	bool compare(const surface_curve_sweep&, const surface_curve_sweep&) {
+		throw std::runtime_error("not implemented");
+	}
+
 	bool compare(const style& a, const style& b) {
 		const int order[5] = {
-			less_to_order_optional(a.name, b.name),
-			less_to_order_optional(a.diffuse, b.diffuse),
-			less_to_order_optional(a.specular, b.specular),
-			less_to_order_optional(a.specularity, b.specularity),
-			less_to_order_optional(a.transparency, b.transparency)
+			less_to_order(a.name, b.name),
+			less_to_order(a.diffuse, b.diffuse),
+			less_to_order(a.specular, b.specular),
+			less_to_order(a.specularity, b.specularity),
+			less_to_order(a.transparency, b.transparency)
 		};
 		auto it = std::find_if(std::begin(order), std::end(order), [](int x) { return x; });
 		if (it == std::end(order)) return false;
@@ -220,3 +252,161 @@ namespace {
 		}
 	}
 }
+
+ifcopenshell::geometry::taxonomy::solid* ifcopenshell::geometry::create_box(double dx, double dy, double dz) {
+	return create_box(0., 0., 0., dx, dy, dz);
+}
+
+ifcopenshell::geometry::taxonomy::solid* ifcopenshell::geometry::create_box(double x, double y, double z, double dx, double dy, double dz) {
+	auto solid = new taxonomy::solid;
+	auto shell = new taxonomy::shell;
+	solid->children.push_back(shell);
+
+	// x = 0
+	{
+		auto face = new taxonomy::face;
+		auto loop = new taxonomy::loop;
+		face->children.push_back(loop);
+		loop->external = true;
+		shell->children.push_back(face);
+
+		std::array<taxonomy::point3, 4> points{
+			taxonomy::point3(x+0, y+0,  z+ 0),
+			taxonomy::point3(x+0, y+dy, z+ 0),
+			taxonomy::point3(x+0, y+dy, z+dz),
+			taxonomy::point3(x+0, y+0,  z+dz)
+		};
+
+		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
+		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
+		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
+		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+	}
+
+	// x = dx
+	{
+		auto face = new taxonomy::face;
+		auto loop = new taxonomy::loop;
+		face->children.push_back(loop);
+		loop->external = true;
+		shell->children.push_back(face);
+
+		std::array<taxonomy::point3, 4> points{
+			taxonomy::point3(x+dx, y+0,  z+ 0),
+			taxonomy::point3(x+dx, y+0,  z+dz),
+			taxonomy::point3(x+dx, y+dy, z+dz),
+			taxonomy::point3(x+dx, y+dy, z+ 0)
+		};
+
+		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
+		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
+		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
+		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+	}
+
+	// y = 0
+	{
+		auto face = new taxonomy::face;
+		auto loop = new taxonomy::loop;
+		face->children.push_back(loop);
+		loop->external = true;
+		shell->children.push_back(face);
+
+		std::array<taxonomy::point3, 4> points{
+			taxonomy::point3(x+0,  y+0, z+ 0),
+			taxonomy::point3(x+0,  y+0, z+dz),
+			taxonomy::point3(x+dx, y+0, z+dz),
+			taxonomy::point3(x+dx, y+0, z+ 0)
+		};
+
+		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
+		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
+		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
+		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+	}
+
+	// y = dy
+	{
+		auto face = new taxonomy::face;
+		auto loop = new taxonomy::loop;
+		face->children.push_back(loop);
+		loop->external = true;
+		shell->children.push_back(face);
+
+		std::array<taxonomy::point3, 4> points{
+			taxonomy::point3(x+ 0, y+dy, z+ 0),
+			taxonomy::point3(x+dx, y+dy, z+ 0),
+			taxonomy::point3(x+dx, y+dy, z+dz),
+			taxonomy::point3(x+ 0, y+dy, z+dz)
+		};
+
+		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
+		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
+		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
+		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+	}
+
+	// z = 0
+	{
+		auto face = new taxonomy::face;
+		auto loop = new taxonomy::loop;
+		face->children.push_back(loop);
+		loop->external = true;
+		shell->children.push_back(face);
+
+		std::array<taxonomy::point3, 4> points{
+			taxonomy::point3(x+ 0, y+ 0, z+0),
+			taxonomy::point3(x+dx, y+ 0, z+0),
+			taxonomy::point3(x+dx, y+dy, z+0),
+			taxonomy::point3(x+ 0, y+dy, z+0)
+		};
+
+		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
+		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
+		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
+		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+	}
+
+	// z = dz
+	{
+		auto face = new taxonomy::face;
+		auto loop = new taxonomy::loop;
+		face->children.push_back(loop);
+		loop->external = true;
+		shell->children.push_back(face);
+
+		std::array<taxonomy::point3, 4> points{
+			taxonomy::point3(x+ 0, y+ 0, z+dz),
+			taxonomy::point3(x+ 0, y+dy, z+dz),
+			taxonomy::point3(x+dx, y+dy, z+dz),
+			taxonomy::point3(x+dx, y+ 0, z+dz)
+		};
+
+		loop->children.push_back(new taxonomy::edge(points[0], points[1]));
+		loop->children.push_back(new taxonomy::edge(points[1], points[2]));
+		loop->children.push_back(new taxonomy::edge(points[2], points[3]));
+		loop->children.push_back(new taxonomy::edge(points[3], points[0]));
+	}
+
+	return solid;
+}
+
+ifcopenshell::geometry::taxonomy::collection * ifcopenshell::geometry::flatten(const taxonomy::collection * deep) {
+	auto flat = new taxonomy::collection;
+	visit(deep, [&flat](taxonomy::item* i) {
+		flat->children.push_back(i);
+	});
+	return flat;
+}
+
+const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
+	using namespace std::string_literals;
+
+	static std::string values[] = {
+		"matrix4"s, "point3"s, "direction3"s, "line"s, "circle"s, "ellipse"s, "bspline_curve"s, "offset_curve"s, "plane"s, "cylinder"s, "bspline_surface"s, "edge"s, "loop"s, "face"s, "shell"s, "solid"s, "loft"s, "extrusion"s, "revolve"s, "surface_curve_sweep"s, "node"s, "collection"s, "boolean_result"s
+	};
+
+	return values[k];
+}
+
+std::atomic_uint32_t item::counter_(0);

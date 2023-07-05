@@ -21,23 +21,129 @@
 #define IFCGEOMTREE_H
 
 #include "../../../ifcparse/IfcFile.h"
-#include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
-#include "../../../ifcgeom/schema_agnostic/IfcGeomIterator.h"
-#include "../../../ifcgeom/schema_agnostic/Converter.h"
-#include "../../../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
+
+#include "../../../ifcgeom/IfcGeomElement.h"
+#include "../../../ifcgeom/Iterator.h"
+#include "OpenCascadeConversionResult.h"
+#include "base_utils.h"
 
 #include <NCollection_UBTree.hxx>
 #include <BRepBndLib.hxx>
 #include <Bnd_Box.hxx>
+#include <BRep_Builder.hxx>
 #include <BRepAlgoAPI_Common.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
+#include <BRepExtrema_DistShapeShape.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
+#include <TopTools_DataMapOfShapeInteger.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRepExtrema_ExtPF.hxx>
+#include <TopoDS_Face.hxx>
+#include <TopoDS.hxx>
 
-namespace ifcopenshell { namespace geometry {
+namespace IfcGeom {
+
+	struct ray_intersection_result {
+		double distance;
+		int style_index;
+		const IfcUtil::IfcBaseEntity* instance;
+		std::array<double, 3> position;
+		std::array<double, 3> normal;
+		double ray_distance;
+		double dot_product;
+	};
+
+	namespace {
+
+		// Approximates the distance `other` protrudes into `volume` by finding the
+		// max face-vertex distance for every face, and taking the minimal value of
+		// those. Note that this uses the internal `BRepExtrema_ExtPF` which only
+		// returns solutions whose when the vertex projected onto the face is contained
+		// within the face boundaries. In case of concave `volume` this is desirable.
+
+		double max_distance_inside(const TopoDS_Shape& volume, const TopoDS_Shape& other) {
+			TopExp_Explorer exp_v(volume.Reversed(), TopAbs_FACE);
+
+			double min_face_vertex_distance = std::numeric_limits<double>::infinity();
+
+			for (; exp_v.More(); exp_v.Next()) {
+				const TopoDS_Face& f = TopoDS::Face(exp_v.Current());
+
+				BRepExtrema_ExtPF epf;
+				epf.Initialize(f, Extrema_ExtFlag_MIN);
+
+				double face_vertex_distance = 0.;
+
+				TopExp_Explorer exp_o(other, TopAbs_VERTEX);
+				for (; exp_o.More(); exp_o.Next()) {
+					const TopoDS_Vertex& v = TopoDS::Vertex(exp_o.Current());
+					epf.Perform(v, f);
+					if (epf.IsDone() && epf.NbExt() == 1) {
+						double d = epf.SquareDistance(1);
+						if (d > face_vertex_distance) {
+							face_vertex_distance = d;
+						}
+					}
+				}
+
+				if (face_vertex_distance < min_face_vertex_distance) {
+					min_face_vertex_distance = face_vertex_distance;
+				}
+			}
+
+			if (min_face_vertex_distance == std::numeric_limits<double>::infinity()) {
+				return -1.;
+			} else {
+				return std::sqrt(min_face_vertex_distance);
+			}
+		}
+	}
 
 	namespace impl {
 		template <typename T>
 		class tree {
+
+			bool test(const TopoDS_Shape& A, const TopoDS_Shape& B, bool completely_within, double extend) const {
+				if (extend > 0.) {
+					BRepExtrema_DistShapeShape dss(A, B);
+					if (dss.Perform() && dss.NbSolution() >= 1) {
+						if (dss.Value() <= extend) {
+							distances_.push_back(dss.Value());
+							protrusion_distances_.push_back(max_distance_inside(B, A));
+						}						
+						return dss.Value() <= extend;
+					}
+				} else {
+					if (util::count(A, TopAbs_SHELL) == 0 ||
+						util::count(B, TopAbs_SHELL) == 0)
+					{
+						return false;
+					}
+
+					if (completely_within) {
+						BRepAlgoAPI_Cut cut(B, A);
+						if (cut.IsDone()) {
+							if (util::count(cut.Shape(), TopAbs_SHELL) == 0) {
+								return true;
+							}
+						}
+					} else {
+						BRepAlgoAPI_Common common(A, B);
+						if (common.IsDone()) {
+							if (util::count(common.Shape(), TopAbs_SHELL) > 0) {
+								return true;
+							}
+						}
+					}
+				}
+				return false;
+			}
+
+		protected:
+
+			// @todo this is ugly, embed this in the return type
+			mutable std::vector<double> distances_;
+			mutable std::vector<double> protrusion_distances_;
 
 		public:
 
@@ -69,9 +175,10 @@ namespace ifcopenshell { namespace geometry {
 				return select_box(b, completely_within);
 			}
 
-			std::vector<T> select_box(const gp_Pnt& p) const {
+			std::vector<T> select_box(const gp_Pnt& p, double extend=0.0) const {
 				Bnd_Box b;
 				b.Add(p);
+				b.SetGap(b.GetGap() + extend);
 				return select_box(b);
 			}
 
@@ -105,59 +212,41 @@ namespace ifcopenshell { namespace geometry {
 				}
 			}
 
-			std::vector<T> select(const T& t, bool completely_within = false) const {
-				std::vector<T> ts = select_box(t);
+			std::vector<T> select(const T& t, bool completely_within = false, double extend = 0.0) const {
+				distances_.clear();
+				protrusion_distances_.clear();
+
+				std::vector<T> ts = select_box(t, completely_within, extend);
 				if (ts.empty()) {
 					return ts;
 				}
-
-				std::vector<T> ts_filtered;
 
 				const TopoDS_Shape& A = shapes_.find(t)->second;
-				if (kernels::OpenCascadeKernel::count(A, TopAbs_SHELL) == 0) {
-					return ts_filtered;
-				}
 
+				std::vector<T> ts_filtered;
 				ts_filtered.reserve(ts.size());
 
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
-					if (kernels::OpenCascadeKernel::count(B, TopAbs_SHELL) == 0) {
-						continue;
-					}
 
-					if (completely_within) {
-						BRepAlgoAPI_Cut cut(B, A);
-						if (cut.IsDone()) {
-							if (kernels::OpenCascadeKernel::count(cut.Shape(), TopAbs_SHELL) == 0) {
-								ts_filtered.push_back(*it);
-							}
-						}
-					} else {
-						BRepAlgoAPI_Common common(A, B);
-						if (common.IsDone()) {
-							if (kernels::OpenCascadeKernel::count(common.Shape(), TopAbs_SHELL) > 0) {
-								ts_filtered.push_back(*it);
-							}
-						}
+					if (test(A, B, completely_within, extend)) {
+						ts_filtered.push_back(*it);
 					}
 				}
 
 				return ts_filtered;
 			}
 
-			std::vector<T> select(const TopoDS_Shape& s) const {
+			std::vector<T> select(const TopoDS_Shape& s, bool completely_within = false, double extend = -1.e-5) const {
+				distances_.clear();
+				protrusion_distances_.clear();
+
 				Bnd_Box bb;
 				BRepBndLib::AddClose(s, bb);
+				bb.SetGap(bb.GetGap() + extend);
 
-				std::vector<T> ts;
-
-				if (kernels::OpenCascadeKernel::count(s, TopAbs_SHELL) == 0) {
-					return ts;
-				}
-
-				ts = select_box(bb);
+				std::vector<T> ts = select_box(bb, completely_within);
 
 				if (ts.empty()) {
 					return ts;
@@ -169,24 +258,34 @@ namespace ifcopenshell { namespace geometry {
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
-					
-					if (kernels::OpenCascadeKernel::count(B, TopAbs_SHELL) == 0) {
-						continue;
-					}
 
-					BRepAlgoAPI_Common common(s, B);
-					if (common.IsDone()) {
-						if (kernels::OpenCascadeKernel::count(common.Shape(), TopAbs_SHELL) > 0) {
-							ts_filtered.push_back(*it);
-						}
+					if (test(s, B, completely_within, extend)) {
+						ts_filtered.push_back(*it);
 					}
 				}
 
 				return ts_filtered;
 			}
 
-			std::vector<T> select(const gp_Pnt& p) const {
-				std::vector<T> ts = select_box(p);
+			std::vector<T> select(const IfcGeom::BRepElement* elem, bool completely_within = false, double extend = -1.e-5) const {
+				auto shp = elem->geometry().as_compound();
+				auto compound = ((OpenCascadeShape*)shp)->shape();
+				const auto& m = elem->transformation().data().ccomponents();
+				gp_Trsf tr;
+				tr.SetValues(
+					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+					m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+					m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+				);
+				compound.Move(tr);
+				return select(compound, completely_within, extend);
+			}
+
+			std::vector<T> select(const gp_Pnt& p, double extend=0.0) const {
+				distances_.clear();
+				protrusion_distances_.clear();
+
+				std::vector<T> ts = select_box(p, extend);
 				if (ts.empty()) {
 					return ts;
 				}
@@ -194,28 +293,46 @@ namespace ifcopenshell { namespace geometry {
 				std::vector<T> ts_filtered;
 				ts_filtered.reserve(ts.size());
 
+				TopoDS_Vertex v;
+				if (extend > 0.) {
+					BRep_Builder B;
+					B.MakeVertex(v, p, Precision::Confusion());
+				}
+
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
-					TopExp_Explorer exp(B, TopAbs_SOLID);
-					for (; exp.More(); exp.Next()) {
-						BRepClass3d_SolidClassifier cls(exp.Current(), p, 1e-5);
-						if (cls.State() != TopAbs_OUT) {
+					if (extend > 0.0) {
+						BRepExtrema_DistShapeShape dss(v, B);
+						if (dss.Perform() && dss.NbSolution() >= 1 && dss.Value() <= extend) {
+							distances_.push_back(dss.Value());							
+							protrusion_distances_.push_back(max_distance_inside(B, v));
+
 							ts_filtered.push_back(*it);
-							break;
 						}
-					}					
+					} else {
+						TopExp_Explorer exp(B, TopAbs_SOLID);
+						for (; exp.More(); exp.Next()) {
+							BRepClass3d_SolidClassifier cls(exp.Current(), p, 1e-5);
+							if (cls.State() != TopAbs_OUT) {
+								ts_filtered.push_back(*it);
+								break;
+							}
+						}
+					}
 				}
 
 				return ts_filtered;
 			}
 
 		protected:
-
 			typedef NCollection_UBTree<T, Bnd_Box> tree_t;
 			typedef std::map<T, TopoDS_Shape> map_t;
+
 			tree_t tree_;
 			map_t shapes_;
+			
+			bool enable_face_styles_ = false;
 
 			class selector : public tree_t::Selector
 			{
@@ -246,36 +363,158 @@ namespace ifcopenshell { namespace geometry {
 		};
 	}
 
-	class tree : public impl::tree<IfcUtil::IfcBaseEntity*> {
+	class tree : public impl::tree<const IfcUtil::IfcBaseEntity*> {
 	public:
 
 		tree() {};
 
 		tree(IfcParse::IfcFile& f) {
-			add_file(f, ifcopenshell::geometry::settings());
+			add_file(f, IfcGeom::IteratorSettings());
 		}
 
-		tree(IfcParse::IfcFile& f, const ifcopenshell::geometry::settings& settings) {
+		tree(IfcParse::IfcFile& f, const IfcGeom::IteratorSettings& settings) {
 			add_file(f, settings);
 		}
 
-		void add_file(IfcParse::IfcFile& f, const ifcopenshell::geometry::settings& settings) {
-			ifcopenshell::geometry::settings settings_ = settings;
-			settings_.set(ifcopenshell::geometry::settings::DISABLE_TRIANGULATION, true);
-			settings_.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS, true);
-			settings_.set(ifcopenshell::geometry::settings::SEW_SHELLS, true);
+		tree(IfcGeom::Iterator& it) {
+			add_file(it);
+		}		
 
-			Iterator it(settings_, &f);
+		void add_file(IfcParse::IfcFile& f, const IfcGeom::IteratorSettings& settings) {
+			IfcGeom::IteratorSettings settings_ = settings;
+			settings_.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+			settings_.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
+			settings_.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
 
+			IfcGeom::Iterator it(settings_, &f, {}, 1);
+
+			add_file(it);
+		}
+
+		void add_file(IfcGeom::Iterator& it) {
 			if (it.initialize()) {
 				do {
-					NativeElement* elem = (NativeElement*)it.get();
-					add((IfcUtil::IfcBaseEntity*)f.instance_by_id(elem->id()), ((OpenCascadeShape*)elem->geometry().as_compound())->shape());
+					add_element(dynamic_cast<IfcGeom::BRepElement*>(it.get()));
 				} while (it.next());
 			}
 		}
+
+		void add_element(IfcGeom::BRepElement* elem) {
+			if (!elem) {
+				return;
+			}
+			auto compound_generic = elem->geometry().as_compound();
+			auto compound = ((ifcopenshell::geometry::OpenCascadeShape*)compound_generic)->shape();
+			
+			const auto& m = elem->transformation().data().ccomponents();
+			gp_Trsf tr;
+			tr.SetValues(
+				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+				m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+			);
+
+			compound.Move(tr);
+			add(elem->product(), compound);
+			auto git = elem->geometry().begin();
+
+			if (enable_face_styles_) {
+				TopoDS_Iterator it(compound);
+				for (; it.More(); it.Next(), ++git) {
+					// Assumption is that the number of styles is small, so the linear lookup time is not significant.
+					auto sit = std::find(styles_.begin(), styles_.end(), git->Style());
+					size_t index;
+					if (sit == styles_.end()) {
+						index = styles_.size();
+						styles_.push_back(git->Style());
+					} else {
+						index = std::distance(styles_.begin(), sit);
+					}
+
+					TopExp_Explorer exp(it.Value(), TopAbs_FACE);
+					for (; exp.More(); exp.Next()) {
+						face_styles_.Bind(exp.Current(), (int) index);
+					}
+				}
+			}
+		}
+
+		const std::vector<double>& distances() const {
+			return distances_;
+		}
+
+		const std::vector<double>& protrusion_distances() const {
+			return protrusion_distances_;
+		}
+
+		std::vector<IfcGeom::ray_intersection_result> select_ray(const gp_Pnt& p0, const gp_Dir& d, double length = 1000.) const {
+			gp_Pnt p1 = p0.XYZ() + d.XYZ() * length;
+			auto E = BRepBuilderAPI_MakeEdge(p0, p1).Edge();
+			Bnd_Box bb;
+			bb.Add(p0);
+			bb.Add(p1);
+			auto candidates = select_box(bb);
+
+			std::multimap<double, ray_intersection_result> ordered;
+
+			for (auto& c : candidates) {
+				BRepExtrema_DistShapeShape dss(E, shapes_.find(c)->second);
+				for (int i = 1; i <= dss.NbSolution(); ++i) {
+					if (dss.SupportTypeShape1(i) != BRepExtrema_IsOnEdge) {
+						// @todo set to 0, is it on the first verteX?
+						continue;
+					}
+					if (dss.SupportTypeShape2(i) != BRepExtrema_IsInFace) {
+						continue;
+					}
+					double u, v, w;
+					dss.ParOnEdgeS1(i, u);
+					auto face = TopoDS::Face(dss.SupportOnShape2(i));
+					int sidx = -1;
+					if (enable_face_styles_) {
+						sidx = face_styles_.Find(face);
+					}
+					dss.ParOnFaceS2(i, v, w);
+					BRepGProp_Face prop(face);
+					gp_Pnt P;
+					gp_Vec V;
+					prop.Normal(v, w, P, V);
+					ordered.insert({ u,	{ u, sidx, c,
+						{P.X(), P.Y(), P.Z()},
+						{V.X(), V.Y(), V.Z()},
+						d.XYZ().Dot(p0.XYZ() - P.XYZ()),
+						V.Dot(d)
+					} });
+				}
+			}
+
+			std::vector<ray_intersection_result> result;
+			for (auto& p : ordered) {
+				result.push_back(p.second);
+			}
+
+			return result;
+		}
+
+		bool enable_face_styles() const {
+			return enable_face_styles_;
+		}
+
+		void enable_face_styles(bool b) {
+			enable_face_styles_ = b;
+		}
+
+		const std::vector<ifcopenshell::geometry::taxonomy::style>& styles() const {
+			return styles_;
+		}
+
+	protected:
+		typedef TopTools_DataMapOfShapeInteger face_style_map_t;
+
+		face_style_map_t face_styles_;
+		std::vector<ifcopenshell::geometry::taxonomy::style> styles_;
 	};
 
-}}
+}
 
 #endif

@@ -17,9 +17,12 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #include "OpenCascadeBasedSerializer.h"
 
 #include "../ifcparse/utils.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 #include <string>
 #include <fstream>
@@ -36,20 +39,11 @@ bool OpenCascadeBasedSerializer::ready() {
 	return succeeded;
 }
 
-void OpenCascadeBasedSerializer::write(const ifcopenshell::geometry::NativeElement* o) {
-	ifcopenshell::geometry::OpenCascadeShape* occt_shape = ((ifcopenshell::geometry::OpenCascadeShape*) o->geometry().as_compound());
-        TopoDS_Shape compound = occt_shape->shape();
-        delete occt_shape;
-
-	if (o->geometry().settings().get(ifcopenshell::geometry::settings::CONVERT_BACK_UNITS)) {
-		gp_Trsf scale;
-		scale.SetScaleFactor(1.0 / o->geometry().settings().unit_magnitude());
-		
-		compound = BRepBuilderAPI_Transform(compound, scale, true).Shape();
-	}
-
-	ifcopenshell::geometry::OpenCascadeShape s(compound);
-	writeShape(&s);
+void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement* o) {
+	auto itm = o->geometry().as_compound();
+	TopoDS_Shape compound = ((ifcopenshell::geometry::OpenCascadeShape*)itm)->shape();
+	writeShape(object_id(o), compound);
+	delete itm;
 }
 
 #define RATHER_SMALL (1e-3)
@@ -70,3 +64,6 @@ const char* OpenCascadeBasedSerializer::getSymbolForUnitMagnitude(float mag) {
 		return 0;
 	}
 }
+
+#endif
+

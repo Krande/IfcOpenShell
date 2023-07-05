@@ -17,6 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #ifndef IGESSERIALIZER_H
 #define IGESSERIALIZER_H
 
@@ -42,8 +44,8 @@ public:
         : OpenCascadeBasedSerializer(out_filename, settings)
 	{}
 	virtual ~IgesSerializer() {}
-	void writeShape(const ifcopenshell::geometry::ConversionResultShape* shape) {
-		writer.AddShape(*(ifcopenshell::geometry::OpenCascadeShape*)shape);
+	void writeShape(const std::string&, const TopoDS_Shape& shape) {
+		writer.AddShape(shape);
 	}
 	void finalize() {
 		writer.Write(out_filename.c_str());
@@ -61,4 +63,5 @@ public:
 	}
 };
 
+#endif
 #endif

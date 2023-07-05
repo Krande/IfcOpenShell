@@ -31,4 +31,6 @@
 #define MAKE_INIT_FN_(a, b) MAKE_INIT_FN__(a, b)
 #define MAKE_INIT_FN(t) MAKE_INIT_FN_(t, IfcSchema)
 
+
+
 #endif

@@ -1,15 +1,19 @@
 #include "XmlSerializer.h"
 
-extern void init_XmlSerializer_Ifc2x3(XmlSerializerFactory::Factory*);
-extern void init_XmlSerializer_Ifc4(XmlSerializerFactory::Factory*);
-extern void init_XmlSerializer_Ifc4x1(XmlSerializerFactory::Factory*);
-extern void init_XmlSerializer_Ifc4x2(XmlSerializerFactory::Factory*);
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+
+#define EXTERNAL_DEFS(r, data, elem) \
+	extern void BOOST_PP_CAT(init_XmlSerializer_Ifc, elem)(XmlSerializerFactory::Factory*);
+
+#define CALL_DEFS(r, data, elem) \
+	BOOST_PP_CAT(init_XmlSerializer_Ifc, elem)(this);
+
+BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS, , SCHEMA_SEQ)
 
 XmlSerializerFactory::Factory::Factory() {
-	init_XmlSerializer_Ifc2x3(this);
-	init_XmlSerializer_Ifc4(this);
-	init_XmlSerializer_Ifc4x1(this);
-	init_XmlSerializer_Ifc4x2(this);
+	BOOST_PP_SEQ_FOR_EACH(CALL_DEFS, , SCHEMA_SEQ)
 }
 
 void XmlSerializerFactory::Factory::bind(const std::string& schema_name, fn f) {

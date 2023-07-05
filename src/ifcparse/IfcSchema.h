@@ -24,6 +24,7 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
+#include <cctype>
 
 #include <boost/algorithm/string.hpp>
 
@@ -34,15 +35,17 @@ class IfcEntityInstanceData;
 
 namespace IfcUtil {
 	class IfcBaseClass;
+	class IfcBaseEntity;
+	class IfcBaseType;
 }
 
 namespace IfcParse {
 
-	class declaration; 
-	
-	class type_declaration; 
-	class select_type; 
-	class enumeration_type; 
+	class declaration;
+
+	class type_declaration;
+	class select_type;
+	class enumeration_type;
 	class entity;
 
 	class named_type;
@@ -51,8 +54,10 @@ namespace IfcParse {
 
 	class schema_definition;
 
-	class parameter_type {
+	class IFC_PARSE_API parameter_type {
 	public:
+		virtual ~parameter_type() {}
+
 		virtual const named_type* as_named_type() const { return static_cast<named_type*>(0); }
 		virtual const simple_type* as_simple_type() const { return static_cast<simple_type*>(0); }
 		virtual const aggregation_type* as_aggregation_type() const { return static_cast<aggregation_type*>(0); }
@@ -61,7 +66,7 @@ namespace IfcParse {
 		virtual bool is(const IfcParse::declaration& /*decl*/) const { return false; }
 	};
 
-	class named_type : public parameter_type {
+	class IFC_PARSE_API named_type : public parameter_type {
 	protected:
 		declaration* declared_type_;
 	public:
@@ -76,7 +81,7 @@ namespace IfcParse {
 		virtual bool is(const IfcParse::declaration& decl) const;
 	};
 
-	class simple_type : public parameter_type {
+	class IFC_PARSE_API simple_type : public parameter_type {
 	public:
 		typedef enum { binary_type, boolean_type, integer_type, logical_type, number_type, real_type, string_type, datatype_COUNT } data_type;
 	protected:
@@ -90,7 +95,7 @@ namespace IfcParse {
 		virtual const simple_type* as_simple_type() const { return this; }
 	};
 
-	class aggregation_type : public parameter_type {
+	class IFC_PARSE_API aggregation_type : public parameter_type {
 	public:
 		typedef enum { array_type, bag_type, list_type, set_type } aggregate_type;
 	protected:
@@ -105,6 +110,8 @@ namespace IfcParse {
 			, type_of_element_(type_of_element)
 		{}
 
+		virtual ~aggregation_type() { delete type_of_element_; }
+
 		aggregate_type type_of_aggregation() const { return type_of_aggregation_; }
 		int bound1() const { return bound1_; }
 		int bound2() const { return bound2_; }
@@ -113,18 +120,23 @@ namespace IfcParse {
 		virtual const aggregation_type* as_aggregation_type() const { return this; }
 	};
 
-	class declaration {
+	class IFC_PARSE_API declaration {
 		friend class schema_definition;
 
 	protected:
-		std::string name_, name_lower_;
+		std::string name_, name_upper_;
 		int index_in_schema_;
 		mutable const schema_definition* schema_;
 
-	public:		
+		std::string& temp_string_() const {
+			static my_thread_local std::string s;
+			return s;
+		}
+
+	public:
 		declaration(const std::string& name, int index_in_schema)
 			: name_(name)
-			, name_lower_(boost::to_lower_copy(name))
+			, name_upper_(boost::to_upper_copy(name))
 			, index_in_schema_(index_in_schema)
 			, schema_(0)
 		{}
@@ -132,7 +144,7 @@ namespace IfcParse {
 		virtual ~declaration() {}
 
 		const std::string& name() const { return name_; }
-		const std::string& name_lc() const { return name_lower_; }
+		const std::string& name_uc() const { return name_upper_; }
 
 		virtual const type_declaration* as_type_declaration() const { return static_cast<type_declaration*>(0); }
 		virtual const select_type* as_select_type() const { return static_cast<select_type*>(0); }
@@ -149,7 +161,7 @@ namespace IfcParse {
 		const schema_definition* schema() const { return schema_; }
 	};
 
-	class type_declaration : public declaration {
+	class IFC_PARSE_API type_declaration : public declaration {
 	protected:
 		const parameter_type* declared_type_;
 
@@ -158,12 +170,14 @@ namespace IfcParse {
 			: declaration(name, index_in_schema)
 			, declared_type_(declared_type)	{}
 
+		virtual ~type_declaration() { delete declared_type_; }
+
 		const parameter_type* declared_type() const { return declared_type_; }
 
 		virtual const type_declaration* as_type_declaration() const { return this; }
 	};
 
-	class select_type : public declaration {
+	class IFC_PARSE_API select_type : public declaration {
 	protected:
 		std::vector<const declaration*> select_list_;
 	public:
@@ -176,7 +190,7 @@ namespace IfcParse {
 		virtual const select_type* as_select_type() const { return this; }
 	};
 
-	class enumeration_type : public declaration {
+	class IFC_PARSE_API enumeration_type : public declaration {
 	protected:
 		std::vector<std::string> enumeration_items_;
 	public:
@@ -186,10 +200,27 @@ namespace IfcParse {
 
 		const std::vector<std::string>& enumeration_items() const { return enumeration_items_; }
 
+		const char* lookup_enum_value(size_t i) const {
+			if (i >= enumeration_items_.size()) {
+				throw IfcParse::IfcException("Unable to find keyword in schema for index " + std::to_string(i));
+			}
+			return enumeration_items_[i].c_str();
+		}
+
+		size_t lookup_enum_offset(const std::string& s) const {
+			size_t i = 0;
+			for (auto it = enumeration_items_.begin(); it != enumeration_items_.end(); ++it, ++i) {
+				if (s == *it) {
+					return i;
+				}
+			}
+			throw IfcParse::IfcException("Unable to find keyword in schema: " + s);
+		}
+
 		virtual const enumeration_type* as_enumeration_type() const { return this; }
 	};
 
-	class attribute {
+	class IFC_PARSE_API attribute {
 	protected:
 		std::string name_;
 		const parameter_type* type_of_attribute_;
@@ -201,12 +232,14 @@ namespace IfcParse {
 			, type_of_attribute_(type_of_attribute)
 			, optional_(optional) {}
 
+		~attribute() { delete type_of_attribute_; }
+
 		const std::string& name() const { return name_; }
 		const parameter_type* type_of_attribute() const { return type_of_attribute_; }
 		bool optional() const { return optional_; }
 	};
 
-	class inverse_attribute {
+	class IFC_PARSE_API inverse_attribute {
 	public:
 		typedef enum { bag_type, set_type, unspecified_type } aggregate_type;
 	protected:
@@ -232,7 +265,7 @@ namespace IfcParse {
 		const attribute* attribute_reference() const { return attribute_reference_; }
 	};
 
-	class entity : public declaration {
+	class IFC_PARSE_API entity : public declaration {
 	protected:
 		bool is_abstract_;
 		const entity* supertype_; /* NB: IFC explicitly allows only single inheritance */
@@ -243,7 +276,7 @@ namespace IfcParse {
 
 		std::vector<const inverse_attribute*> inverse_attributes_;
 
-		class attribute_by_name_cmp : public std::unary_function<const attribute*, bool> {
+		class attribute_by_name_cmp {
 		private:
 			std::string name_;
 		public:
@@ -275,6 +308,8 @@ namespace IfcParse {
 			, supertype_(supertype)
 		{}
 
+		virtual ~entity();
+
 		bool is(const std::string& name) const {
 			if (name == name_) return true;
 			else if (supertype_) return supertype_->is(name);
@@ -305,7 +340,7 @@ namespace IfcParse {
 		const std::vector<const entity*>& subtypes() const { return subtypes_; }
 		const std::vector<const attribute*>& attributes() const { return attributes_; }
 		const std::vector<bool>& derived() const { return derived_; }
-	
+
 		const std::vector<const attribute*> all_attributes() const {
 			std::vector<const attribute*> attrs;
 			attrs.reserve(derived_.size());
@@ -383,12 +418,14 @@ namespace IfcParse {
 		virtual const entity* as_entity() const { return this; }
 	};
 
-	class instance_factory {
+	class IFC_PARSE_API instance_factory {
 	public:
+		virtual ~instance_factory() {}
+
 		virtual IfcUtil::IfcBaseClass* operator()(IfcEntityInstanceData* data) const = 0;
 	};
 
-	class schema_definition {
+	class IFC_PARSE_API schema_definition {
 	private:
 		std::string name_;
 
@@ -399,14 +436,14 @@ namespace IfcParse {
 		std::vector<const enumeration_type*> enumeration_types_;
 		std::vector<const entity*> entities_;
 
-		class declaration_by_name_cmp : public std::binary_function<const declaration*, const std::string&, bool> {
+		class declaration_by_name_cmp {
 		public:
 			bool operator()(const declaration* decl, const std::string& name) {
-				return decl->name_lc() < name;
+				return decl->name_uc() < name;
 			}
 		};
 
-		class declaration_by_index_sort : public std::binary_function<const declaration*, const declaration*, bool> {
+		class declaration_by_index_sort  {
 		public:
 			bool operator()(const declaration* a, const declaration* b) {
 				return a->index_in_schema() < b->index_in_schema();
@@ -415,17 +452,27 @@ namespace IfcParse {
 
 		instance_factory* factory_;
 
+		std::string& temp_string_() const {
+			static my_thread_local std::string s;
+			return s;
+		}
+
 	public:
-		
+
 		schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, instance_factory* factory);
 
 		~schema_definition();
 
 		const declaration* declaration_by_name(const std::string& name) const {
-			const std::string name_lower = boost::to_lower_copy(name);
-			std::vector<const declaration*>::const_iterator it = std::lower_bound(declarations_.begin(), declarations_.end(), name_lower, declaration_by_name_cmp());
-			if (it == declarations_.end() || (**it).name_lc() != name_lower) {
-				throw IfcParse::IfcException("Entity with '" + name + "' not found");
+			const std::string* name_ptr = &name;
+			if (std::any_of(name.begin(), name.end(), [](char c) { return std::islower(c); })) {
+				temp_string_() = name;
+				boost::to_upper(temp_string_());
+				name_ptr = &temp_string_();
+			}
+			std::vector<const declaration*>::const_iterator it = std::lower_bound(declarations_.begin(), declarations_.end(), *name_ptr, declaration_by_name_cmp());
+			if (it == declarations_.end() || (**it).name_uc() != *name_ptr) {
+				throw IfcParse::IfcException("Entity with name '" + name + "' not found in schema '" + name_ + "'");
 			} else {
 				return *it;
 			}
@@ -443,10 +490,16 @@ namespace IfcParse {
 
 		const std::string& name() const { return name_; }
 
-		IfcUtil::IfcBaseClass* instantiate(IfcEntityInstanceData* data) const { return (*factory_)(data); }
+		IfcUtil::IfcBaseClass* instantiate(IfcEntityInstanceData* data) const;
 	};
 
-	const schema_definition* schema_by_name(const std::string&);
+	IFC_PARSE_API const schema_definition* schema_by_name(const std::string&);
+
+	IFC_PARSE_API std::vector<std::string> schema_names();
+
+	IFC_PARSE_API void register_schema(schema_definition*);
+
+	IFC_PARSE_API void clear_schemas();
 }
 
 #endif

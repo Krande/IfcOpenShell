@@ -26,12 +26,16 @@
 
 #define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/x.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
+#undef INCLUDE_PARENT_PARENT_DIR
+#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/x-definitions.h)
+#include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 
 class POSTFIX_SCHEMA(XmlSerializer) : public XmlSerializer {
 private:
 	IfcParse::IfcFile* file;
+
 	// @todo
-	ifcopenshell::geometry::settings settings_;
+	IfcGeom::IteratorSettings settings_;
 	ifcopenshell::geometry::abstract_mapping* mapping_;
 
 public:

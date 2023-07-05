@@ -1,7 +1,19 @@
 # Dependency and build folders created by the build scripts
-/deps*/
-/build*/
-/install*/
+/_deps/
+/_build-vs*-x*/
+/_deps-vs*-x*-installed/
+/_installed-vs*-x*/
+/build/
+
+# output directories
+/cmake/out/
+/docs/out/
+/src/examples/out/
+/src/ifcmax/out/
+/src/ifcwrap/out/
+/src/qtviewer/out/
+
+
 /win/BuildDepsCache*.txt
 # IfcExpressParser residue
 /src/ifcexpressparser/express_parser.py
@@ -10,7 +22,71 @@ __pycache__
 *.py.bak
 # Visual Studio Code files
 .vscode
+.vs
 # PyCharm files
 .idea
-# OSX files
-.DS_Store
+
+#Virtual Env Files
+Pipfile
+Pipfile.lock
+
+# Docs
+/docs/output
+/docs/rst_files
+/docs/doxygen
+/src/ifcblenderexport/docs/_build
+
+# gettext binary translation files
+*.mo
+
+# Vim
+*.swp
+*.swo
+
+# Flask
+instance/*
+!instance/.gitignore
+.webassets-cache
+.env
+*.db
+
+# Byte-compiled / optimized / DLL files
+*.py[cod]
+*$py.class
+
+# pipenv
+Pipfile
+Pipfile.lock
+
+# Database
+*.db
+
+# PyTest
+htmlcov
+.coverage
+
+# Blender
+*.blend1
+
+# Sphinx
+_build/
+
+# IDS Docs
+src/ifcopenshell-python/test/build
+
+# tox cache
+.tox/
+*.egg-info/
+
+# mypy cache
+.mypy_cache
+
+# blenderbim libs
+src/blenderbim/blenderbim/libs
+
+# blenderbim test temp files
+src/blenderbim/test/files/temp
+
+# ifcopenshell swig and compiled files
+src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper.so
+src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py

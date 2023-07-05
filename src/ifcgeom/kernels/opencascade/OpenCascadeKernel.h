@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -17,10 +17,11 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef OPENCASCADEKERNEL_H
-#define OPENCASCADEKERNEL_H
+#ifndef IFCGEOM_H
+#define IFCGEOM_H
 
 #include <cmath>
+#include <array>
 
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
@@ -30,6 +31,7 @@
 #include <gp_GTrsf2d.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
+#include <gp_Quaternion.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
@@ -41,229 +43,129 @@
 #include <BRep_Builder.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 
-#include "../../../ifcgeom/kernel_agnostic/AbstractKernel.h" 
+#include "../../../ifcgeom/AbstractKernel.h" 
 
-#include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h" 
-#include "../../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h" 
-#include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
+#include "../../../ifcgeom/IfcGeomElement.h" 
+#include "../../../ifcgeom/IfcGeomRepresentation.h" 
+#include "../../../ifcgeom/ConversionResult.h"
 
 #include "../../../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
-#include "../../../ifcgeom/schema_agnostic/ifc_geom_api.h"
+#include "../../../ifcgeom/ifc_geom_api.h"
 
 #include "../../../ifcgeom/taxonomy.h"
+#include "../../../ifcgeom/ConversionSettings.h"
 
-// Define this in case you want to conserve memory usage at all cost. This has been
-// benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
-// #define NO_CACHE
+// @todo remove once merged to same ns.
+using namespace ifcopenshell::geometry;
 
-#ifdef NO_CACHE
+namespace IfcGeom {
 
-#define IN_CACHE(T,E,t,e)
-#define CACHE(T,E,e)
-
-#else
-
-#define IN_CACHE(T,E,t,e) std::map<int,t>::const_iterator it = cache.T.find(E->data().id());\
-if ( it != cache.T.end() ) { e = it->second; return true; }
-#define CACHE(T,E,e) cache.T[E->data().id()] = e;
-
-#endif
-
-namespace ifcopenshell {
-namespace geometry {
-namespace kernels {
-
-	class IFC_GEOM_API geometry_exception : public std::exception {
-	protected:
-		std::string message;
-	public:
-		geometry_exception(const std::string& m)
-			: message(m) {}
-		virtual ~geometry_exception() throw () {}
-		virtual const char* what() const throw() {
-			return message.c_str();
-		}
-	};
-
-	class IFC_GEOM_API too_many_faces_exception : public geometry_exception {
-	public:
-		too_many_faces_exception()
-			: geometry_exception("Too many faces for operation") {}
-	};
+class IFC_GEOM_API OpenCascadeKernel : public kernels::AbstractKernel {
+private:
 
 	/*
-	class IFC_GEOM_API POSTFIX_SCHEMA(Cache) {
-	public:
-#include "IfcRegisterCreateCache.h"
-		std::map<int, TopoDS_Shape> Shape;
-	};
+	faceset_helper traverses the forward instance references of IfcConnectedFaceSet and then provides a mapping
+	M of (IfcCartesianPoint, IfcCartesianPoint) -> TopoDS_Edge, where M(a, b) is a partner of M(b, a), ie share
+	the same underlying edge but with orientation reversed. This then later speeds op the process of creating a
+	manifold Shell / Solid from this set of faces. Only IfcPolyLoop instances are used. Points within the tolerance
+	threshiold are merged, so consider points a, b, c, distance(a, b) < eps then M(a, b) = Null, M(a, b) = M(a, c).
 	*/
 
-	
-	class IFC_GEOM_API OpenCascadeKernel : public AbstractKernel {
+	class faceset_helper {
 	private:
-		// faceset_helper traverses the forward instance references of IfcConnectedFaceSet and then provides a mapping
-		// M of (IfcCartesianPoint, IfcCartesianPoint) -> TopoDS_Edge, where M(a, b) is a partner of M(b, a), ie share
-		// the same underlying edge but with orientation reversed. This then later speeds op the process of creating a
-		// manifold Shell / Solid from this set of faces. Only IfcPolyLoop instances are used. Points within the tolerance
-		// threshiold are merged, so consider points a, b, c, distance(a, b) < eps then M(a, b) = Null, M(a, b) = M(a, c).
-		class faceset_helper {
-		private:
-			OpenCascadeKernel* kernel_;
-			std::set<int> duplicates_;
-			std::map<int, int> vertex_mapping_;
-			std::map<std::pair<int, int>, TopoDS_Edge> edges_;
-			double eps_;
-			bool non_manifold_;
+		OpenCascadeKernel* kernel_;
+		std::set<int> duplicates_;
+		std::map<int, int> vertex_mapping_;
+		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
+		double eps_;
+		bool non_manifold_;
+		
+		void loop_(const taxonomy::loop* ps, const std::function<void(int, int, bool)>& callback);
 
-			template <typename Fn>
-			void loop_(const taxonomy::loop* ps, const Fn& callback) {
-				if (ps->children.size() < 3) {
-					return;
-				}
+		/*
+		bool construct(const IfcSchema::IfcCartesianPoint* cp, gp_Pnt* l);
+		bool construct(const std::vector<double>& cp, gp_Pnt* l);
 
-				auto a = boost::get<taxonomy::point3>(((taxonomy::edge*) ps->children.back())->start).instance;
-				auto A = a->data().id();
-				for (auto& b : ps->children) {
-					auto B = boost::get<taxonomy::point3>(((taxonomy::edge*) b)->start).instance->data().id();
-					auto C = vertex_mapping_[A], D = vertex_mapping_[B];
-					bool fwd = C < D;
-					if (!fwd) {
-						std::swap(C, D);
-					}
-					if (C != D) {
-						callback(C, D, fwd);
-						A = B;
-					}
-				}
-			}
-		public:
-			faceset_helper(OpenCascadeKernel* kernel, const taxonomy::shell* l);
+		const void* get_idx(const IfcSchema::IfcCartesianPoint* cp) {
+			return cp;
+		}
 
-			~faceset_helper();
+		const void* get_idx(const std::vector<double>& cp) {
+			return &cp;
+		}
 
-			bool non_manifold() const { return non_manifold_; }
-			bool& non_manifold() { return non_manifold_; }
+		std::vector<const void*> get_idxs(const IfcSchema::IfcPolyLoop* lp);
+		std::vector<const void*> get_idxs(const std::vector<int>& it);
+		*/
+	public:
+		faceset_helper(OpenCascadeKernel* kernel, const taxonomy::shell* l);
+		~faceset_helper();
 
-			bool edge(const taxonomy::point3& a, const taxonomy::point3& b, TopoDS_Edge& e) {
-				int A = vertex_mapping_[a.instance->data().id()];
-				int B = vertex_mapping_[b.instance->data().id()];
-				if (A == B) {
-					return false;
-				}
+		bool non_manifold() const { return non_manifold_; }
+		bool& non_manifold() { return non_manifold_; }
+		double epsilon() const { return eps_; }
+		
+		bool edge(int A, int B, TopoDS_Edge& e);
 
-				return edge(A, B, e);
-			}
-
-			bool edge(int A, int B, TopoDS_Edge& e) {
-				auto it = edges_.find({ A, B });
-				if (it == edges_.end()) {
-					return false;
-				}
-				e = it->second;
-				return true;
-			}
-
-			bool wire(const taxonomy::loop* loop, TopoDS_Wire& wire) {
-				if (duplicates_.find(loop->instance->data().id()) != duplicates_.end()) {
-					return false;
-				}
-				BRep_Builder builder;
-				builder.MakeWire(wire);
-				int count = 0;
-				loop_(loop, [this, &builder, &wire, &count](int A, int B, bool fwd) {
-					TopoDS_Edge e;
-					if (edge(A, B, e)) {
-						if (!fwd) {
-							e.Reverse();
-						}
-						builder.Add(wire, e);
-						count += 1;
-					}
-				});
-				if (count >= 3) {
-					wire.Closed(true);
-
-					/*
-					@todo
-					TopTools_ListOfShape results;
-					if (kernel_->wire_intersections(wire, results)) {
-						Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", loop);
-						kernel_->select_largest(results, wire);
-						non_manifold_ = true;
-					}
-					*/
-
-					return true;
-				} else {
-					return false;
-				}
-			}
-
-			double epsilon() const {
-				return eps_;
-			}
-		};		
-
-/*
-#ifndef NO_CACHE
-		POSTFIX_SCHEMA(Cache) cache;
-#endif
-*/
+		bool wire(const taxonomy::loop* loop, TopoDS_Wire& wire);
+		bool wires(const taxonomy::loop* loop, TopTools_ListOfShape& wires);
+	};
 
 	faceset_helper* faceset_helper_;
-	double precision_;
 
-	public:
-		OpenCascadeKernel()
-			: AbstractKernel("opencascade")
-			, faceset_helper_(nullptr)
-			// @todo
-			, precision_(1.e-5) {}
-
-		OpenCascadeKernel(const OpenCascadeKernel& other)
-			: AbstractKernel("opencascade") {
-			*this = other;
-		}
-
-		static double shape_volume(const TopoDS_Shape&);
-		static double face_area(const TopoDS_Face&);
-		static int count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool unique = false);
-
-		bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape);
-		bool create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape);
-
-		bool convert(const taxonomy::extrusion*, TopoDS_Shape&);
-		bool convert(const taxonomy::face*, TopoDS_Shape&);
-		bool convert(const taxonomy::loop*, TopoDS_Wire&);
-		bool convert(const taxonomy::matrix4*, gp_GTrsf&);
-		bool convert(const taxonomy::shell*, TopoDS_Shape&);
-
-		bool approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps = -1.);
-		bool triangulate_wire(const std::vector<TopoDS_Wire>& wires, TopTools_ListOfShape& faces);
-		bool boolean_operation(const TopoDS_Shape& a_, const TopTools_ListOfShape& b__, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness = -1.);
-		const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid);
-		bool flatten_shape_list(const ifcopenshell::geometry::ConversionResults& shapes, TopoDS_Shape& result, bool fuse);
-		bool is_compound(const TopoDS_Shape& shape);
-
-		TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const taxonomy::matrix4& t);
-		TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t);
-		TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t);
-
-		virtual bool convert_impl(const taxonomy::face*, ifcopenshell::geometry::ConversionResults&);
-		virtual bool convert_impl(const taxonomy::shell*, ifcopenshell::geometry::ConversionResults&);
-		virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
-		virtual bool convert_impl(const taxonomy::boolean_result*, ifcopenshell::geometry::ConversionResults&);
-	};
-
+	// @todo these should be moved to the mapping
 	/*
-	IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(tesselate_)(const TopoDS_Shape& shape, double deflection);
-	IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise_)(const TopoDS_Shape& shape, bool advanced);
+	gp_Vec offset = gp_Vec{0.0, 0.0, 0.0};
+	gp_Quaternion rotation = gp_Quaternion{};
+	gp_Trsf offset_and_rotation = gp_Trsf();
 	*/
 
-}
-}
-}
+	double precision_;
 
+public:
+	OpenCascadeKernel(const ConversionSettings& settings)
+		: AbstractKernel("opencascade", settings)
+		, faceset_helper_(nullptr)
+		, precision_(settings.getValue(ConversionSettings::GV_PRECISION))
+	{}
+
+	bool convert(const taxonomy::extrusion*, TopoDS_Shape&);
+	bool convert(const taxonomy::face*, TopoDS_Shape&);
+	bool convert(const taxonomy::loop*, TopoDS_Wire&);
+	bool convert(const taxonomy::matrix4*, gp_GTrsf&);
+	bool convert(const taxonomy::shell*, TopoDS_Shape&);
+	bool convert(const taxonomy::solid*, TopoDS_Shape&);
+	bool convert(const taxonomy::bspline_surface* bs, Handle(Geom_Surface) surf);
+
+	TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const taxonomy::matrix4& t);
+	TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t);
+	TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t);
+
+	virtual bool convert_impl(const taxonomy::face*, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::solid*, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::shell*, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::extrusion*, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const taxonomy::boolean_result*, IfcGeom::ConversionResults&);
+
+	virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::item*, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
+		const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
+
+	template <typename T, typename U>
+	static T convert_xyz(const U& u) {
+		const auto& vs = u.ccomponents();
+		return T(vs(0), vs(1), vs(2));
+	}
+
+	// @todo eliminate
+	template <typename T, typename U>
+	static T convert_xyz2(const U& vs) {
+		return T(vs(0), vs(1), vs(2));
+	}
+};
+
+IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(tesselate_)(const TopoDS_Shape& shape, double deflection);
+IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise_)(const TopoDS_Shape& shape, bool advanced);
+
+}
 #endif
