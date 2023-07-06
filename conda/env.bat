@@ -1,14 +1,14 @@
 @echo off
 
 :: This is a batch file to set the environment variables for the project
-:: It is not strictly necessary, but it provides you with type hints when working with the OpenCascade c++ library
-:: distributed using conda-forge
+:: It is not necessary for conda compilation, but it provides you with type hints when working with the c++ libraries
+:: OpenCascade, CGAL, Eigen, etc distributed using conda-forge in your IDE.
 ::
 :: mamba env update -f environment.build.yml --prune
 :: mamba activate ifcopenshell-build
 ::
 :: Note!
-:: You have to add a .env file to the root of the project where you set PREFIX=<path to your conda env>
+:: You have to add a .env file next to this env.bat file where you set PREFIX=<path to your conda env>
 set CONDA_BUILD=1
 set MY_PY_VER=311
 
@@ -38,12 +38,12 @@ set Boost_USE_STATIC_LIBS=OFF
 set GMP_INCLUDE_DIR=%LIBRARY_PREFIX%/include
 set GMP_LIBRARY_DIR=%LIBRARY_PREFIX%/lib
 set MPFR_LIBRARY_DIR=%LIBRARY_PREFIX%/lib
-set COLLADA_SUPPORT=OFF
-set HDF5_SUPPORT=ON
+
 set HDF5_INCLUDE_DIR=%LIBRARY_PREFIX%/include
 set HDF5_LIBRARY_DIR=%LIBRARY_PREFIX%/lib
 set JSON_INCLUDE_DIR=%LIBRARY_PREFIX%/include
 
+set HDF5_SUPPORT=ON
 set BUILD_IFCPYTHON=ON
 set BUILD_IFCGEOM=ON
 set COLLADA_SUPPORT=OFF
