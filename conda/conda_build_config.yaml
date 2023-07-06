@@ -4,6 +4,9 @@ CONDA_BUILD_SYSROOT: # used for github actions conda daily build
 occt:
   - 7.7.1
 
+cgal-cpp:
+  - 5.3
+
 c_compiler:
   - vs2022  # [win]
 

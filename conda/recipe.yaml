@@ -53,12 +53,12 @@ test:
     - ifcopenshell
 
 about:
-  home: http://ifcopenshell.org
+  home: https://ifcopenshell.org
   license: LGPL-3.0-or-later
   license_file: COPYING
   summary: 'IfcOpenShell is a library to support the IFC file format'
   description: |
     IfcOpenShell is an open source (LGPL) software library for 
     working with the Industry Foundation Classes (IFC) file format.
-  doc_url: http://ifcopenshell.org/
+  doc_url: https://blenderbim.org/docs-python/
   dev_url: https://github.com/IfcOpenShell/IfcOpenShell
