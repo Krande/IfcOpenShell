@@ -65,7 +65,7 @@ OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only ins
 OPTION(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
 OPTION(WITH_OPENCASCADE "Enable geometry interpretation using Open CASCADE" ON)
 OPTION(WITH_CGAL "Enable geometry interpretation using CGAL" ON)
-OPTION(CITYJSON_SUPPORT "Build IfcConvert with CityJSON support (requires CityJSON library)." OFF)
+OPTION(CITYJSON_SUPPORT "Build IfcConvert with CityJSON support (requires CityJSON library)." ON)
 
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
