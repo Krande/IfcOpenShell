@@ -10,6 +10,7 @@ dependencies:
   - hdf5
   - mpfr
   - nlohmann_json
+  - swig
   - zlib
   # These needs to be installed per platform
   #- sel(unix): gmp
