@@ -37,6 +37,7 @@ cmake -G "Ninja" ^
  -D Boost_LIBRARY_DIR:FILEPATH="%LIBRARY_PREFIX%\lib" ^
  -D Boost_INCLUDE_DIR:FILEPATH="%LIBRARY_PREFIX%\include" ^
  -D Boost_USE_STATIC_LIBS:BOOL=OFF ^
+ -D CITYJSON_SUPPORT:BOOL=OFF ^
  %SRC_DIR%/cmake
 
 if errorlevel 1 exit 1

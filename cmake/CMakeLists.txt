@@ -190,8 +190,11 @@ endif()
 
 if (NOT MINIMAL_BUILD)
 if (WITH_CGAL)
-add_definitions(-DIFOPSH_WITH_CGAL)
-set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
+    if (CITYJSON_SUPPORT)
+        add_definitions(-DIFOPSH_WITH_CGAL)
+        set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
+    endif ()
+
 list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 endif()
@@ -952,6 +955,7 @@ endif()
 if (BUILD_CONVERT)
 
 if (WITH_CGAL AND CITYJSON_SUPPORT)
+    message(STATUS "Building CityJSON support")
 set(CITYJSON_CONVERT_FILES
 	../src/ifcconvert/cityjson/geobim.cpp
 	../src/ifcconvert/cityjson/global_execution_context.cpp
