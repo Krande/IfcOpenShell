@@ -25,7 +25,7 @@ requirements:
     - boost-cpp
     - occt
     - libxml2
-    - cgal-cpp ==5.3
+    - cgal-cpp
     - hdf5
     - eigen
     - mpfr
@@ -39,7 +39,7 @@ requirements:
     - boost-cpp
     - occt
     - libxml2
-    - cgal-cpp ==5.3
+    - cgal-cpp
     - hdf5
     - eigen
     - mpfr
