@@ -8,6 +8,8 @@ package:
 
 source:
   path: ..
+  #patches:
+  #  - patches/updated_namedparams.patch
 
 build:
   number: 1

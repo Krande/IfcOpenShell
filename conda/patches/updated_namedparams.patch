@@ -1,0 +1,28 @@
+Subject: [PATCH] updated namedparams
+---
+Index: src/ifcconvert/cityjson/radius_execution_context.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/ifcconvert/cityjson/radius_execution_context.cpp b/src/ifcconvert/cityjson/radius_execution_context.cpp
+--- a/src/ifcconvert/cityjson/radius_execution_context.cpp	(revision 551780d76aa9c95df725778671ae45f32c611df8)
++++ b/src/ifcconvert/cityjson/radius_execution_context.cpp	(date 1688991999906)
+@@ -942,7 +942,7 @@
+ 		boost::property_map<cgal_shape_t, boost::face_external_index_t>::type>
+		fsm(fim);
+
+-	auto ffim = CGAL::Polygon_mesh_processing::parameters::face_index_map(fim);
++	auto ffim = CGAL::parameters::face_index_map(fim);
+
+ 	CGAL::Polygon_mesh_processing::connected_components(
+		input,
+@@ -988,7 +988,7 @@
+ 		input,
+ 		components_to_keep,
+ 		fsm,
+-		CGAL::Polygon_mesh_processing::parameters::vertex_index_map(vertex_index_map));
++		CGAL::parameters::vertex_index_map(vertex_index_map));
+ }
+ 
+ cgal_shape_t radius_execution_context::extract(const cgal_shape_t& input, extract_component component) const {
