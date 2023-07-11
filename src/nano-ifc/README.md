@@ -24,8 +24,8 @@ pip install --no-build-isolation .
 Tip! If you want to get type hints from the c++ packages in your conda environment,
 I recommend creating a batch file to set the environment variables and use that as an environment file.
 
-Either run the batch file prior to starting your IDE or if you are using 
-CLION you can point to the env.bat file
+Either run the batch file as part of the start up routine for your IDE or if you are using 
+CLION you can point to the env.bat file using
 
 `Build, Execution, Deployment > Toolchains -> Add Environment -> Environment file.`
 
