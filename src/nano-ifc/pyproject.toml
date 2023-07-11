@@ -1,7 +1,7 @@
 [build-system]
 requires = [
     "scikit-build-core[pyproject]",
-    "nanobind>=1.1.0"
+    "nanobind>=1.4.0"
 ]
 
 build-backend = "scikit_build_core.build"
@@ -43,4 +43,4 @@ editable.mode = "redirect"
 
 wheel.packages = ["src/nanoifc"]
 wheel.install-dir = "nanoifc"
-#wheel.license-files = []
+wheel.license-files = []
