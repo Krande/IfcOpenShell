@@ -11,6 +11,9 @@
 #include <XCAFDoc_ColorType.hxx>
 #include <XCAFDoc_ColorTool.hxx>
 #include <optional>
+#include "binding_core.h"
 
 
-TopoDS_Solid create_box(const std::vector<float> &box_origin, const std::vector<float> &box_dims);
+TopoDS_Solid create_occt_box(const std::vector<float> &box_origin, const std::vector<float> &box_dims);
+
+void occ_module(nb::module_ &m);

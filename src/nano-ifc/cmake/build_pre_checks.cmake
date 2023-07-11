@@ -10,3 +10,7 @@ if (NOT CMAKE_BUILD_TYPE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif ()
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
+
+if (APPLE)
+    include(build_pre_apple.cmake)
+endif ()

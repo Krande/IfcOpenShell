@@ -11,7 +11,7 @@ find_package(nanobind CONFIG REQUIRED)
 
 # Print the list of cpp files separated by spaces without altering it
 string(REPLACE ";" " " NANO_IFC_SOURCES_STR "${NANO_IFC_SOURCES}")
-message(STATUS "AdaCpp sources: " ${NANO_IFC_SOURCES_STR})
+message(STATUS "NANO IFC sources: " ${NANO_IFC_SOURCES_STR})
 
 # Create a Python module
 nanobind_add_module(_nano_ifc_ext_impl ${NANO_IFC_SOURCES})

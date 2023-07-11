@@ -27,7 +27,8 @@ Installing as conda package
 
 ```bash
 cd conda
-boa build .
+mamba activate nano-ifc
+boa build . --no-remove-work-dir
 mamba install --use-local nano-ifc
 ```
 

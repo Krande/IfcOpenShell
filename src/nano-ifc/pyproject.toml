@@ -43,4 +43,4 @@ editable.mode = "redirect"
 
 wheel.packages = ["src/nanoifc"]
 wheel.install-dir = "nanoifc"
-wheel.license-files = []
+#wheel.license-files = []
