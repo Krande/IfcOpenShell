@@ -41,6 +41,6 @@ build-dir = "build/{wheel_tag}"
 # This is the only editable mode currently
 editable.mode = "redirect"
 
-wheel.packages = ["src/adacpp"]
-wheel.install-dir = "adacpp"
+wheel.packages = ["src/nanoifc"]
+wheel.install-dir = "nanoifc"
 wheel.license-files = []

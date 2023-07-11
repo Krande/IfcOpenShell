@@ -2,7 +2,7 @@ name: nano-ifc
 channels:
   - conda-forge
 dependencies:
-  - occt ==7.7.0
+  - occt ==7.7.1=*novtk*
   - nanobind ==1.2.0
   - pytest ==7.3.1
   - scikit-build-core ==0.3.3

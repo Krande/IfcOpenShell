@@ -30,9 +30,3 @@ function(convert_env_var_to_bool var_name)
         # Not defined, leave it as a string
     endif ()
 endfunction()
-
-MACRO(UNIFY_ENVVARS_AND_CACHE VAR)
-    IF ((NOT DEFINED ${VAR}) AND (NOT "$ENV{${VAR}}" STREQUAL ""))
-        SET(${VAR} "$ENV{${VAR}}" CACHE STRING "${VAR}" FORCE)
-    ENDIF ()
-ENDMACRO()
