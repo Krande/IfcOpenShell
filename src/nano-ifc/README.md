@@ -26,7 +26,8 @@ pip install --no-build-isolation .
 Installing as conda package
 
 ```bash
-mamba mambabuild . -c conda-forge --python 3.11 --override-channels
+cd conda
+boa build .
 mamba install --use-local nano-ifc
 ```
 
