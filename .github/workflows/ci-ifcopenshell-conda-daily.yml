@@ -48,20 +48,16 @@ jobs:
           create-args: >-
             python=${{ matrix.pyver.distver }}
 
-      - name: create dist dir
+      - name: build & test package
         run: |
           mkdir -p ${{ github.workspace }}/dist
-
-      - name: build local packages
-        run: |
           boa build conda --python ${{ matrix.pyver.distver }} -m ./conda/conda_build_config.yaml --no-remove-work-dir --output-folder '${{ github.workspace }}/dist'
 
       - name: upload to anaconda
-        if: ${{ matrix.platform.name == 'win' && matrix.platform.upload == 'true' }}
+        if: matrix.platform.upload == 'true'
         run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user krande --label dev '${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2'
-
-      - name: upload to anaconda
-        if: ${{ matrix.platform.name != 'win' && matrix.platform.upload == 'true' }}
-        run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user krande --label dev ${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2
+          path="${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2"
+          if [ "${{ matrix.platform.name }}" == 'win' ]; then
+            path="'$path'"
+          fi
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user krande --label dev $path
