@@ -13,6 +13,7 @@ if [ `uname` == Darwin ]; then
 fi
 
 cmake -G Ninja \
+ -DSWIG_EXECUTABLE=$PREFIX/bin/swig \
  -DSWIG_DIR=$PREFIX/bin \
  -DSCHEMA_VERSIONS="2x3;4;4x3;4x3_add1" \
  -DCMAKE_BUILD_TYPE=Release \
