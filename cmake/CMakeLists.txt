@@ -157,6 +157,17 @@ endif()
 UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
 UNIFY_ENVVARS_AND_CACHE(BOOST_LIBRARYDIR)
 
+# Include the 'convert_env_var_to_bool' and 'get_all_option_flags' functions
+include(utilities.cmake)
+
+# Get a list of all OPTION flags from the CMakeLists.txt
+get_all_option_flags(option_flags)
+
+# Loop through the list of OPTION flags and convert the corresponding environment variables
+foreach(option_flag IN LISTS option_flags)
+    convert_env_var_to_bool("${option_flag}")
+endforeach()
+
 if(WASM_BUILD)
     # when using the nix/build-all.py build script we should not
     # look into the sysroot for most of the dependencies but rather
@@ -711,6 +722,7 @@ if(NOT SCHEMA_VERSIONS)
 endif()
 
 foreach(s ${SCHEMA_VERSIONS})
+    message(STATUS "Adding schema version ${s}")
 	add_definitions(-DHAS_SCHEMA_${s})
 endforeach()
 

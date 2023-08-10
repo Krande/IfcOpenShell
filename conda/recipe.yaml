@@ -10,7 +10,6 @@ source:
   path: ..
 
 build:
-  binary_relocation: false [osx]
   number: 1
 
 requirements:

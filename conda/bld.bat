@@ -2,6 +2,7 @@ mkdir build && cd build
 
 set MY_PY_VER=%PY_VER:.=%
 set LIBXML2="%LIBRARY_PREFIX%/lib/libxml2.lib"
+set SCHEMA_VERSIONS="2x3;4;4x3;4x3_add1"
 
 cmake -G "Ninja" ^
  -D CMAKE_BUILD_TYPE:STRING=Release ^

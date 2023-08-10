@@ -1,5 +1,5 @@
 CONDA_BUILD_SYSROOT:
-  - /opt/MacOSX10.13.sdk       # [osx]
+  - "/Users/runner/work/MacOSX10.15.sdk"  # [osx]
 
 occt:
   - 7.7.0
