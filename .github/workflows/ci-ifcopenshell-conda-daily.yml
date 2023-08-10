@@ -57,7 +57,7 @@ jobs:
       - name: build & test package
         run: |
           mkdir -p ${{ github.workspace }}/dist
-          boa build conda --python ${{ matrix.pyver.distver }} -m ./conda/conda_build_config.yaml --no-remove-work-dir --output-folder '${{ github.workspace }}/dist'
+          boa build conda --python ${{ matrix.pyver.distver }} -m ./conda/conda_build_config.yaml --output-folder '${{ github.workspace }}/dist'
 
       - name: upload to anaconda
         if: matrix.platform.upload == 'true'
