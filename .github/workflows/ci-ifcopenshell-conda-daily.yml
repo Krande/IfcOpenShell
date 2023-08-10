@@ -38,10 +38,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: remove swig on windows
-        if: ${{ matrix.platform.name == 'Windows' }}
+      - name: uninstall swig on linux (which for some reason overrides conda build swig)
+        if: ${{ matrix.platform.name == 'Linux' }}
         run: |
-          choco uninstall swig
+          sudo apt-get remove swig
           
       - name: Download MacOSX SDK
         if: ${{ matrix.platform.name == 'macOS' }}

@@ -42,4 +42,4 @@ cmake -G Ninja \
 
 ninja
 
-ninja install -j 1
+ninja install
