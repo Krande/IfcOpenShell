@@ -6,8 +6,5 @@ dependencies:
   - conda-verify
   - anaconda-client
   - ninja
-  - doxygen
-  - ripgrep
-  - pip
-  - pip:
-      - lief==0.13
+  - boa
+
