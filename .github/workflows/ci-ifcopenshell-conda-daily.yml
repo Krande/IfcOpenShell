@@ -13,6 +13,8 @@ on:
   #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
   #         *  * * * *
   - cron: "49 23 * * *" # 11min before utc midnight every day
+env:
+  WORK_DIR: /home/runner/work
 
 jobs:
   test:
@@ -56,15 +58,15 @@ jobs:
 
       - name: build & test package
         run: |
-          mkdir -p ${{ github.workspace }}/dist
-          mkdir -p ${{ github.workspace }}/build
-          boa build . --python ${{ matrix.pyver.distver }} -m ./conda_build_config.yaml --output-folder '${{ github.workspace }}/dist' --croot '${{ github.workspace }}/build'
+          mkdir -p ${{ env.WORK_DIR }}/dist
+          mkdir -p ${{ env.WORK_DIR }}/build
+          boa build . --python ${{ matrix.pyver.distver }} -m ./conda_build_config.yaml --output-folder '${{ env.WORK_DIR }}/dist' --croot '${{ env.WORK_DIR }}/build'
         working-directory: conda
 
       - name: upload to anaconda
         if: matrix.platform.upload == 'true'
         run: |
-          path="${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2"
+          path="${{ env.WORK_DIR }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2"
           if [ "${{ matrix.platform.name }}" == 'Windows' ]; then
             path="'$path'"
           fi
