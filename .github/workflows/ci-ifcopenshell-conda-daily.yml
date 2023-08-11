@@ -29,9 +29,9 @@ jobs:
           { name: py311, distver: '3.11'}
         ]
         platform: [
-          { name: Windows, distver: windows-2022, upload: 'true' },
-          { name: Linux, distver: ubuntu-22.04,  upload: 'true' },
-          { name: macOS, distver: macos-12, upload: 'true' }
+          { name: Windows, distver: windows-2022, upload: 'true', pkg_dir: win-64 },
+          { name: Linux, distver: ubuntu-22.04,  upload: 'true', pkg_dir: linux-64 },
+          { name: macOS, distver: macos-12, upload: 'true', pkg_dir: osx-64 }
         ]
     steps:
       - uses: actions/checkout@v3
@@ -57,7 +57,9 @@ jobs:
       - name: build & test package
         run: |
           mkdir -p ${{ github.workspace }}/dist
-          boa build conda --python ${{ matrix.pyver.distver }} -m ./conda/conda_build_config.yaml --output-folder '${{ github.workspace }}/dist'
+          mkdir -p ${{ github.workspace }}/build
+          boa build . --python ${{ matrix.pyver.distver }} -m ./conda_build_config.yaml --output-folder '${{ github.workspace }}/dist' --croot '${{ github.workspace }}/build'
+        working-directory: conda
 
       - name: upload to anaconda
         if: matrix.platform.upload == 'true'
