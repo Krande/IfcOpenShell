@@ -1,0 +1,46 @@
+[build-system]
+requires = [
+    "scikit-build-core[pyproject]",
+    "nanobind>=1.4.0"
+]
+
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "nano-ifc"
+version = "0.0.1"
+authors = [
+    { name = "Kristoffer H. Andersen", email = "kristoffer_andersen@outlook.com" },
+]
+description = "A minimal python wrapping of IfcOpenShell using nanobind"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Utilities",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/Krande/IfcOpenShell"
+"Bug Tracker" = "https://github.com/Krande/IfcOpenShell/issues"
+
+[tool.scikit-build]
+cmake.args = ["-Wno-dev"]
+cmake.verbose = true
+#cmake.build-type = "Debug"
+
+build-dir = "build/{wheel_tag}"
+
+# This is the only editable mode currently
+editable.mode = "redirect"
+
+wheel.packages = ["src/nanoifc"]
+wheel.install-dir = "nanoifc"
+wheel.license-files = []
