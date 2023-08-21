@@ -1,15 +1,15 @@
-name: ci-ifcopenshell-conda-daily-v0.8.0
+name: ci-ifcopenshell-nano-ifc-v0.8.0
 
 on:
   push:
     branches:
-      - v0.8.0
+      - v0.8.0/nano-ifc
 
 jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell'
+      github.repository == 'Krande/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
