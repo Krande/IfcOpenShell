@@ -3,7 +3,7 @@ name: ci-ifcopenshell-nano-ifc-v0.8.0
 on:
   push:
     branches:
-      - v0.8.0/nano-ifc-donotuse
+      - v0.8.0/nano-ifc
 
 jobs:
   activate:
@@ -53,11 +53,15 @@ jobs:
           fi
       - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
         with:
-          environment-file: conda/environment.build.yml
+          environment-name: test-env
           condarc: |
+            conda-build:
+              pkg_format: 2
+              zstd_compression_level: 19
             channels:
-
+              - conda-forge
           create-args: >-
+            boa
             python=${{ matrix.pyver.distver }}
             anaconda-client
 
