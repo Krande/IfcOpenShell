@@ -26,7 +26,7 @@ requirements:
     - occt
     - libxml2
     - cgal-cpp
-    - hdf5
+    - hdf5 1.10.6
     - eigen
     - mpfr
     - sel(unix): gmp
@@ -40,7 +40,7 @@ requirements:
     - occt
     - libxml2
     - cgal-cpp
-    - hdf5
+    - hdf5 1.10.6
     - eigen
     - mpfr
     - sel(unix): gmp
