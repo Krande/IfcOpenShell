@@ -9,7 +9,7 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell'
+      github.repository == 'Krande/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
@@ -42,18 +42,15 @@ jobs:
         run: |
           curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz | tar -xvJf - -C /Users/runner/work/
 
-      - name: Install ninja
-        run: |
-          if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-            sudo apt-get install ninja-build
-          elif [[ "$OSTYPE" == "darwin"* ]]; then
-            brew install ninja
-          elif [[ "$OSTYPE" == "win32" ]]; then
-            choco install ninja
-          fi
       - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
         with:
           environment-file: conda/environment.build.yml
+          condarc: |
+            conda-build:
+              pkg_format: 2
+              zstd_compression_level: 19
+            channels:
+              - conda-forge
           create-args: >-
             python=${{ matrix.pyver.distver }}
             anaconda-client
@@ -64,15 +61,13 @@ jobs:
 
       - name: build & test ifcopenshell
         run: |
-          boa build . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist'
+          boa build . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --pkg-format=2
         working-directory: ./conda
 
       - name: upload to anaconda
-        if: ${{ matrix.platform.name == 'win' }}
         run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell '${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2'
-
-      - name: upload to anaconda
-        if: ${{ matrix.platform.name != 'win' }}
-        run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2
+          path="${{ github.workspace }}/dist/*.conda"
+          if [ "${{ matrix.platform.name }}" == 'win' ]; then
+            path="'$path'"
+          fi
+          anaconda -t ${{ env.ANACONDA_TOKEN }} upload --force --user krande --label ifc $path
