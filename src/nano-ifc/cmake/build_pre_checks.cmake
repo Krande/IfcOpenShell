@@ -12,5 +12,7 @@ endif ()
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 
 if (APPLE)
-    include(build_pre_apple.cmake)
+    # Use file parent directory to refer to neighboring files
+    get_filename_component(PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
+    include(${PARENT_DIR}/build_pre_apple.cmake)
 endif ()
