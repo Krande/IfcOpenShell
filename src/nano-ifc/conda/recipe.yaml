@@ -18,13 +18,15 @@ requirements:
     - "{{ compiler('c') }}"
     - "{{ compiler('cxx') }}"
     - sel(unix): "{{ cdt('mesa-libGL-devel') }}"  # provides OpenGL development libraries
+    - pip
+    - scikit-build-core
+    - nanobind
+
   host:
     - python
     - occt
     - cgal-cpp
-    - scikit-build-core
-    - nanobind
-    - pip
+
   run:
     - python
     - "{{ pin_compatible('occt', max_pin='x.x.x') }}"

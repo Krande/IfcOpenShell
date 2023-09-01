@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - v0.8.0/nano-ifc
+    paths:
+      - .github/workflows/ci-ifcopenshell-conda-daily.yml
+      - conda/** # this is the conda recipe
 
 jobs:
   activate:
@@ -32,6 +35,7 @@ jobs:
           { name: linux, distver: ubuntu-latest, pkg_dir: 'linux-64' },
           { name: macOS, distver: macos-latest, pkg_dir: 'osx-64' }
         ]
+        occt: [ '7.7.1=*novtk*', '7.7.1=*all*']
     steps:
       - uses: actions/checkout@v3
         with:
@@ -68,9 +72,8 @@ jobs:
 
       - name: build & test ifcopenshell
         run: |
-          conda config --show-sources
-          boa build . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --pkg-format=2
-        working-directory: ./conda
+          python ./conda/conda_variant.py ${{ matrix.occt }}
+          boa build conda --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --pkg-format=2 -m=./conda/_conda_build_config.yaml
 
       - name: upload to anaconda
         run: |
