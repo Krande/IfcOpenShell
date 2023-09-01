@@ -42,9 +42,15 @@ jobs:
         run: |
           curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz | tar -xvJf - -C /Users/runner/work/
 
+      - name: try to remove swig
+        continue-on-error: true
+        run: |
+          sudo apt remove swig make
+          sudo rm -r /usr/bin/swig4.0
+
       - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
         with:
-          environment-file: conda/environment.build.yml
+          environment-name: test-env
           condarc: |
             conda-build:
               pkg_format: 2
@@ -52,6 +58,7 @@ jobs:
             channels:
               - conda-forge
           create-args: >-
+            boa
             python=${{ matrix.pyver.distver }}
             anaconda-client
 
