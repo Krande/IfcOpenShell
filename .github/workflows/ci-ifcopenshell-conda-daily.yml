@@ -3,7 +3,7 @@ name: ci-ifcopenshell-conda-daily-v0.8.0
 on:
   push:
     branches:
-      - v0.8.0
+      - v0.8.0/nano-ifc
 
 jobs:
   activate:
