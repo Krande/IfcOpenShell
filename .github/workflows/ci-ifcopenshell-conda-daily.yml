@@ -68,6 +68,7 @@ jobs:
 
       - name: build & test ifcopenshell
         run: |
+          conda config --show-sources
           boa build . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --pkg-format=2
         working-directory: ./conda
 
