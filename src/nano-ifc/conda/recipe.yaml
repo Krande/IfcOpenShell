@@ -10,20 +10,21 @@ source:
   path: ../
 
 build:
-  number: 1
-  script: python -m pip install . --no-build-isolation -v
+  number: 0
+  script:
+    - "{{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv"
 
 requirements:
   build:
     - "{{ compiler('c') }}"
     - "{{ compiler('cxx') }}"
     - sel(unix): "{{ cdt('mesa-libGL-devel') }}"  # provides OpenGL development libraries
-    - pip
-    - scikit-build-core
-    - nanobind
 
   host:
     - python
+    - pip
+    - scikit-build-core
+    - nanobind
     - occt
     - cgal-cpp
 
