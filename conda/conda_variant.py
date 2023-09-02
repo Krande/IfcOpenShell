@@ -1,14 +1,21 @@
-import pathlib
 import argparse
-import yaml
+import pathlib
+
+from ruamel.yaml import YAML
 
 
 def main(conda_dir, variants):
+    yaml = YAML(typ='rt')
+    # yaml.explicit_start = True
+    yaml.indent(mapping=2, offset=2)
+    yaml.preserve_quotes = True  # not necessary for your current input
+    yaml.allow_duplicate_keys = True
+
     """A function that makes a copey of a conda_build_config.yaml and creates a copy with only the desired variant"""
 
     conda_dir = pathlib.Path(conda_dir)
     with open(conda_dir / "conda_build_config.yaml", "r") as f:
-        config = yaml.safe_load(f)
+        config = yaml.load(f)
 
     for variant in variants:
         variant_name, *variant_version = variant.split('=')
@@ -17,7 +24,7 @@ def main(conda_dir, variants):
 
     # write yaml file
     with open(conda_dir / "_conda_build_config.yaml", "w") as f:
-        yaml.safe_dump(config, f, indent=2)
+        yaml.dump(config, f)
 
 
 if __name__ == '__main__':
