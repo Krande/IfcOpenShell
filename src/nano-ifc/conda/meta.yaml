@@ -1,0 +1,52 @@
+{% set name = 'nano-ifc' %}
+{% set version = '0.0.1' %}
+
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
+
+source:
+  path: ../
+
+build:
+  number: 1
+  script: python -m pip install . --no-build-isolation -v
+
+requirements:
+  build:
+    - "{{ compiler('c') }}"
+    - "{{ compiler('cxx') }}"
+    #  provides OpenGL development libraries
+    - "{{ cdt('mesa-libGL-devel') }}"  # unix
+    - pip
+    - scikit-build-core
+    - nanobind
+
+  host:
+    - python
+    - occt {{ occt }}
+    - cgal-cpp
+
+  run:
+    - python
+    - occt {{ occt }}
+    - cgal-cpp
+
+test:
+  source_files:
+    - tests
+  requires:
+    - pytest
+    - occt {{ occt }}
+  commands:
+    - pytest tests
+
+about:
+  home: https://github.com/Krande/adacpp
+  license: "GPL-3.0-or-later"
+  license_family: GPL3
+  summary: "A module with drop-in replacement functions for ada-py written in c++ to improve performance."
+
+extra:
+  recipe-maintainers:
+    - Krande
