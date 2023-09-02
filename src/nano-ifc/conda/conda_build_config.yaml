@@ -1,6 +1,3 @@
-occt:
-  - 7.7.1=*novtk*
-
 CONDA_BUILD_SYSROOT:
   - "/Users/runner/work/MacOSX10.15.sdk"  # [osx]
 
