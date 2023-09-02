@@ -13,10 +13,6 @@ build:
   number: 1
 
 requirements:
-  run_exports:
-    strong:
-      - occt
-
   build:
     - "{{ compiler('c') }}"
     - "{{ compiler('cxx') }}"
@@ -25,7 +21,6 @@ requirements:
     - swig >=4.0.2
 
   host:
-    - python
     - boost-cpp
     - occt
     - libxml2

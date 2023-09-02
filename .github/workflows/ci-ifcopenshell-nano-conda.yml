@@ -65,6 +65,6 @@ jobs:
 
       - name: build & test ifcopenshell
         run: |
-          boa build . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --pkg-format=2
-          #conda mambabuild . --python ${{ matrix.pyver.distver }} --output-folder '${{ github.workspace }}/dist'
-        working-directory: ./src/nano-ifc/conda
+          boa build conda --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --pkg-format=2
+          #conda mambabuild conda --python ${{ matrix.pyver.distver }} --output-folder '${{ github.workspace }}/dist'
+        working-directory: ./src/nano-ifc

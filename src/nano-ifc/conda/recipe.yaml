@@ -11,7 +11,7 @@ source:
 
 build:
   number: 1
-  script: $python -m pip install . --no-build-isolation -v
+  script: python -m pip install . --no-build-isolation -v
 
 requirements:
   build:
@@ -24,12 +24,12 @@ requirements:
 
   host:
     - python
-    - occt 7.7.1=*novtk*
+    - occt
     - cgal-cpp
 
   run:
     - python
-    - occt 7.7.1=*novtk*
+    - "{{ pin_compatible('occt', max_pin='x.x.x') }}"
     - cgal-cpp
 
 test:

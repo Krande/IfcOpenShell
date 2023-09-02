@@ -6,3 +6,6 @@ c_compiler:
 
 cxx_compiler:
   - vs2022  # [win]
+
+occt:
+  - 7.7.1=*novtk*
