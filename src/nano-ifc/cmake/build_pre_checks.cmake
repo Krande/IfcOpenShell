@@ -13,7 +13,7 @@ message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 
 if (APPLE)
     # if cmake_osx_sysroot is undefined set it
-    if (NOT DEFINED CMAKE_OSX_SYSROOT or NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
+    if (NOT DEFINED CMAKE_OSX_SYSROOT OR NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
         set(CMAKE_OSX_SYSROOT "/Users/runner/work/MacOSX10.15.sdk" CACHE PATH "macOS SDK path" FORCE)
         set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "macOS deployment target" FORCE)
     else ()
