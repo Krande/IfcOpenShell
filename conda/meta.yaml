@@ -1,5 +1,5 @@
-{% name = 'ifcopenshell' %}
-{% version = '0.8.0alpha1' %}
+{% set name = 'ifcopenshell' %}
+{% set version = '0.8.0alpha1' %}
 
 source:
   path: ..
