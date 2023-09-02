@@ -18,7 +18,7 @@ jobs:
         run: echo ok go
 
   test:
-    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}-${{ matrix.occt }}
+    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}-occt=${{ matrix.occt }}
     needs: activate
     runs-on: ${{ matrix.platform.distver }}
     defaults:
