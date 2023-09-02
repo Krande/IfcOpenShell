@@ -29,7 +29,8 @@ requirements:
 
   run:
     - python
-    - "{{ pin_compatible('occt', max_pin='x.x.x') }}"
+    - occt
+    - cgal-cpp
 
 test:
   source_files:
