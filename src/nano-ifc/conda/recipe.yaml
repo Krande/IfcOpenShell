@@ -29,7 +29,7 @@ requirements:
 
   run:
     - python
-    - occt
+    - occt {{ occt }}
     - cgal-cpp
 
 test:
