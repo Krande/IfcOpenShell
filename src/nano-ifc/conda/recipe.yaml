@@ -24,7 +24,7 @@ requirements:
 
   host:
     - python
-    - occt
+    - occt {{ occt }}
     - cgal-cpp
 
   run:
