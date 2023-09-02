@@ -37,6 +37,7 @@ test:
     - tests
   requires:
     - pytest
+    - occt {{ occt }}
   commands:
     - pytest tests
 
