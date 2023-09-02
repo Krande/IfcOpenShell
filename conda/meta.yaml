@@ -1,6 +1,10 @@
 {% set name = 'ifcopenshell' %}
 {% set version = '0.8.0alpha1' %}
 
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
+
 source:
   path: ..
 
