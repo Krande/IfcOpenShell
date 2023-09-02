@@ -4,7 +4,7 @@ import pathlib
 from ruamel.yaml import YAML
 
 
-def main(conda_dir, variants):
+def main(variants):
     yaml = YAML(typ='rt')
     # yaml.explicit_start = True
     yaml.indent(mapping=2, offset=2)
@@ -13,7 +13,7 @@ def main(conda_dir, variants):
 
     """A function that makes a copey of a conda_build_config.yaml and creates a copy with only the desired variant"""
 
-    conda_dir = pathlib.Path(conda_dir)
+    conda_dir = pathlib.Path(__file__).parent.absolute()
     with open(conda_dir / "conda_build_config.yaml", "r") as f:
         config = yaml.load(f)
 
@@ -29,8 +29,7 @@ def main(conda_dir, variants):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("conda_dir", type=str, help="The directory of the conda recipe")
     parser.add_argument("variant", type=str, nargs='+', help="The dependency variant to use, ie. occt=7.5.0=*novtk*")
 
     args = parser.parse_args()
-    main(args.conda_dir, args.variant)
+    main(args.variant)

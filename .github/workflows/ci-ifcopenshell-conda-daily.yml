@@ -18,7 +18,7 @@ jobs:
         run: echo ok go
 
   test:
-    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
+    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}-${{ matrix.occt }}
     needs: activate
     runs-on: ${{ matrix.platform.distver }}
     defaults:
@@ -72,7 +72,7 @@ jobs:
 
       - name: build & test ifcopenshell
         run: |
-          python ./conda/conda_variant.py ${{ github.workspace }}/conda ${{ matrix.occt }}
+          python ./conda/conda_variant.py ${{ matrix.occt }}
           boa build conda --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --pkg-format=2 -m=./conda/_conda_build_config.yaml
 
       - name: upload to anaconda
