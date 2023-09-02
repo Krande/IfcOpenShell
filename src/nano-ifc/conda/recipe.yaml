@@ -14,6 +14,10 @@ build:
   script: python -m pip install . --no-build-isolation -v
 
 requirements:
+  run_exports:
+    strong:
+      - occt
+
   build:
     - "{{ compiler('c') }}"
     - "{{ compiler('cxx') }}"

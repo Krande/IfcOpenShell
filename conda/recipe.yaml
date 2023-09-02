@@ -13,6 +13,10 @@ build:
   number: 1
 
 requirements:
+  run_exports:
+    strong:
+      - occt
+
   build:
     - "{{ compiler('c') }}"
     - "{{ compiler('cxx') }}"

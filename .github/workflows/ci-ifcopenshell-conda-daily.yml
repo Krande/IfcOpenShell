@@ -73,7 +73,8 @@ jobs:
       - name: build & test ifcopenshell
         run: |
           python ./conda/conda_variant.py ${{ matrix.occt }}
-          conda mambabuild conda --python ${{ matrix.pyver.distver }} --output-folder '${{ github.workspace }}/dist' -m=./conda/_conda_build_config.yaml
+          boa build conda --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --pkg-format=2 -m=./conda/_conda_build_config.yaml
+          #conda mambabuild conda --python ${{ matrix.pyver.distver }} --output-folder '${{ github.workspace }}/dist' -m=./conda/_conda_build_config.yaml
 
       - name: upload to anaconda
         run: |
