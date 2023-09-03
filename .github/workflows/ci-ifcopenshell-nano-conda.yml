@@ -67,3 +67,7 @@ jobs:
         run: |
           boa build . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --pkg-format=2
         working-directory: ./src/nano-ifc/conda
+        env:
+          CONDA_BUILD_SYSROOT: "/Users/runner/work/MacOSX10.15.sdk"  # [osx]
+          OSX_DEPLOYMENT_TARGET: "10.15"  # [osx]
+

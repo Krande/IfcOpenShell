@@ -12,6 +12,9 @@ endif ()
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 
 if (APPLE)
+    message(STATUS "Existing macOS SDK is ${CMAKE_OSX_SYSROOT}")
+    message(STATUS "Existing macOS deployment target is ${CMAKE_OSX_DEPLOYMENT_TARGET}")
+
     set(CMAKE_OSX_SYSROOT "/Users/runner/work/MacOSX10.15.sdk" CACHE PATH "macOS SDK path" FORCE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "macOS deployment target" FORCE)
 
