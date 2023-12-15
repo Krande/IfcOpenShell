@@ -38,6 +38,8 @@
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "BUILD_IFCPYTHON": "ON",
+        "BUILD_SHARED_LIBS": "OFF",
         "CMAKE_INSTALL_PREFIX": "$env{LIBRARY_PREFIX}",
         "PYTHON_EXECUTABLE": "$env{PREFIX}/python.exe",
         "PYTHON_INCLUDE_DIR": "$env{PREFIX}/include",
