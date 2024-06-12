@@ -563,52 +563,24 @@ if(HDF5_SUPPORT)
     endif()
 
     if(HDF5_LIBRARY_DIR)
-        # result of the HDF5 ctest package
-        # Find zlib using cmake find_library. How should this be implemented?
-        # FIND_LIBRARY(NAMES z libz libz_debug PATHS ... NO_DEFAULT_PATH)
-        if("$ENV{CONDA_BUILD}" STREQUAL "")
-            # result of the HDF5 ctest package
-            if(WIN32)
-                set(zlib_post lib)
-                set(lib_ext lib)
-            else()
-                set(lib_ext a)
-            endif()
+        # Find HDF5 package
+        find_package(HDF5 REQUIRED COMPONENTS C CXX)
 
-            if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-                set(debug_postfix "_debug")
-            endif()
+        # Find ZLIB package
+        find_package(ZLIB REQUIRED)
 
-            set(HDF5_LIBRARIES
-                "${HDF5_LIBRARY_DIR}/libhdf5_cpp${debug_postfix}.${lib_ext}"
-                "${HDF5_LIBRARY_DIR}/libhdf5${debug_postfix}.${lib_ext}"
-                "${HDF5_LIBRARY_DIR}/libz${zlib_post}${debug_postfix}.${lib_ext}"
-                "${HDF5_LIBRARY_DIR}/libsz${debug_postfix}.${lib_ext}"
-                "${HDF5_LIBRARY_DIR}/libaec${debug_postfix}.${lib_ext}"
-            )
+        if(HDF5_FOUND AND ZLIB_FOUND)
+            message(STATUS "HDF5 and ZLIB found.")
 
+            # Include directories
+            include_directories(${HDF5_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS})
+
+            # Link libraries
+            set(HDF5_LIBRARIES ${HDF5_LIBRARIES} ${ZLIB_LIBRARIES})
+
+            message(STATUS "HDF5 libraries: ${HDF5_LIBRARIES}")
         else()
-            message(STATUS "Packaging hdf5 and zlib for conda distribution")
-
-            if(WIN32)
-                # Windows
-                set(zlib_post zlib)
-                set(lib_ext lib)
-            elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-                # macOS
-                set(zlib_post libz)
-                set(lib_ext dylib)
-            else()
-                # linux
-                set(zlib_post libz)
-                set(lib_ext so)
-            endif()
-
-            set(HDF5_LIBRARIES
-                "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
-                "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
-                "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
-            )
+            message(FATAL_ERROR "HDF5 or ZLIB not found.")
         endif()
     endif()
 
