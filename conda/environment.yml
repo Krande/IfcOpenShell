@@ -1,0 +1,17 @@
+name: ifcopenshell-build
+channels:
+  - conda-forge
+dependencies:
+  - ninja
+  - python=3.12
+  - libboost-devel=1.86
+  - occt
+  - libxml2
+  - cgal-cpp
+  - hdf5
+  - eigen
+  - mpfr
+  - nlohmann_json
+  - swig
+  - mpir
+  - zlib
