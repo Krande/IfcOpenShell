@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - ninja
+  - cmake
   - python=3.12
   - libboost-devel=1.86
   - occt

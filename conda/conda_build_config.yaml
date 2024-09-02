@@ -1,7 +1,3 @@
-variant:
-  - novtk
-  - all
-
 occt:
   - 7.8.1
 

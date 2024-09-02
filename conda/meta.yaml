@@ -1,9 +1,6 @@
 {% set version = environ.get('VERSION_OVERRIDE', '0.8.0') %}
 {% set build = 0 %}
 
-# Higher number -> Always prioritize "novtk" variant over "all" variant
-{% set build = build + 200 %}   # [variant == "novtk"]
-{% set build = build + 100 %}   # [variant == "all"]
 
 package:
   name: ifcopenshell
@@ -17,9 +14,8 @@ build:
   number: {{ build }}
   skip: true  # [py<39]
   binary_relocation: false  # [osx]
-  string: py{{ CONDA_PY }}_{{ variant }}_h{{ PKG_HASH }}_{{ build }}
   run_exports:
-    - {{ pin_subpackage('ifcopenshell', max_pin='x.x.x') }} *{{ variant }}*
+    - {{ pin_subpackage('ifcopenshell', max_pin='x.x.x') }}
 
 
 requirements:
@@ -33,7 +29,7 @@ requirements:
   host:
     - python
     - libboost-devel
-    - occt *=*{{ variant }}*
+    - occt
     - libxml2
     - cgal-cpp
     - hdf5
@@ -45,7 +41,8 @@ requirements:
     - zlib
   run:
     - python
-    - {{ pin_compatible('occt', max_pin='x.x.x') }} *{{ variant }}*
+    - numpy
+    - {{ pin_compatible('occt', max_pin='x.x.x') }}
     - {{ pin_compatible('cgal-cpp', max_pin='x.x') }}
 
 

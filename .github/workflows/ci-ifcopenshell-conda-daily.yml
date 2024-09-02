@@ -48,9 +48,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [novtk, all]
         pyver: [
-#          { name: py311, distver: '3.11'},
+          { name: py311, distver: '3.11'},
           { name: py312, distver: '3.12'}
         ]
         platform: [
@@ -88,7 +87,7 @@ jobs:
 
       - name: build & test ifcopenshell
         run: |
-          conda mambabuild . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --variants='{variant: ${{ matrix.variant }}}'
+          conda mambabuild . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist'
         working-directory: ./conda
         env:
           VERSION_OVERRIDE: ${{ needs.activate.outputs.verdate }}

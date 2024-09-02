@@ -1,0 +1,61 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "include": [
+    ".env.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "win-local",
+      "inherits": ["env-vars"],
+      "generator": "Ninja",
+      "hidden": false,
+      "environment": {
+        "CONDA_BUILD": "ON",
+        "LIBRARY_PREFIX": "$env{PREFIX}/Library",
+        "MY_PY_VER": "312"
+      },
+      "cacheVariables": {
+        "SCHEMA_VERSIONS": "2x3;4;4x1;4x3_add2",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "$env{LIBRARY_PREFIX}",
+        "CMAKE_FIND_ROOT_PATH": "$env{PREFIX};$env{LIBRARY_PREFIX}",
+        "CMAKE_PROGRAM_PATH": "$env{LIBRARY_PREFIX}/bin;$env{PREFIX}/Scripts",
+        "CMAKE_PREFIX_PATH": "$env{PREFIX};$env{LIBRARY_PREFIX};$env{LIBRARY_PREFIX}/include;$env{LIBRARY_PREFIX}/lib;$env{LIBRARY_PREFIX}/bin",
+        "OCC_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include/opencascade",
+        "OCC_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
+        "CGAL_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
+        "EIGEN_DIR": "$env{LIBRARY_PREFIX}/include/eigen3",
+        "LIBXML2_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include/libxml2",
+        "LIBXML2_LIBRARIES": "$env{LIBRARY_PREFIX}/lib/libxml2.lib",
+        "GMP_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
+        "GMP_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
+        "MPFR_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
+        "COLLADA_SUPPORT": "OFF",
+        "HDF5_SUPPORT": "ON",
+        "HDF5_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
+        "HDF5_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
+        "JSON_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
+        "PYTHON_INCLUDE_DIR": "$env{PREFIX}/include",
+        "PYTHON_EXECUTABLE": "$env{PREFIX}/python.exe",
+        "PYTHON_LIBRARY": "$env{PREFIX}/libs/python$env{MY_PY_VER}.lib",
+        "BUILD_IFCPYTHON": "ON",
+        "BUILD_IFCGEOM": "ON",
+        "BUILD_EXAMPLES": "OFF",
+        "BUILD_GEOMSERVER": "OFF",
+        "GLTF_SUPPORT": "ON",
+        "BUILD_CONVERT": "ON",
+        "BUILD_IFCMAX": "OFF",
+        "IFCXML_SUPPORT": "ON",
+        "Boost_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
+        "Boost_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
+        "Boost_USE_STATIC_LIBS": "OFF",
+        "CITYJSON_SUPPORT": "OFF"
+      }
+    }
+  ]
+}
