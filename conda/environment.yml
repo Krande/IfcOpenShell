@@ -14,5 +14,5 @@ dependencies:
   - mpfr
   - nlohmann_json
   - swig
-  - mpir
+  - gmp
   - zlib

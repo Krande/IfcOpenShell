@@ -21,7 +21,7 @@
       },
       "cacheVariables": {
         "SCHEMA_VERSIONS": "2x3;4;4x1;4x3_add2",
-        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "CMAKE_INSTALL_PREFIX": "$env{LIBRARY_PREFIX}",
         "CMAKE_FIND_ROOT_PATH": "$env{PREFIX};$env{LIBRARY_PREFIX}",
         "CMAKE_PROGRAM_PATH": "$env{LIBRARY_PREFIX}/bin;$env{PREFIX}/Scripts",
