@@ -118,7 +118,7 @@ void json_message(T& out, const boost::optional<const IfcUtil::IfcBaseClass*>& c
 
     // Append a newline after the JSON object if the Boost version is 1.86 or higher
 #if BOOST_VERSION >= 108600
-    out << std::endl;
+    out << '\n';
 #endif
 
 }
