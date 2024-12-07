@@ -98,3 +98,9 @@ src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 
 # Brickschema
 src/bonsai/bonsai/bim/schema/Brick.ttl
+
+# Pixi files
+.pixi/
+
+# Rattler-build files
+output/

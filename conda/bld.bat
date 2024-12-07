@@ -6,7 +6,7 @@ set MY_PY_VER=%PY_VER:.=%
 
 set LIBXML2="%LIBRARY_PREFIX%/lib/libxml2.lib"
 
-cmake -G "Ninja" ^
+cmake -G "Ninja" -Wno-dev ^
  -D SCHEMA_VERSIONS="2x3;4;4x1;4x3_add2" ^
  -D CMAKE_BUILD_TYPE:STRING=Release ^
  -D CMAKE_INSTALL_PREFIX:FILEPATH="%LIBRARY_PREFIX%" ^

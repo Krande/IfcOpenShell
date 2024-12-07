@@ -1,0 +1,44 @@
+[project]
+name = "ifcopenshell"
+version = "0.8.1"
+description = "A pixi project for building ifcopenshell"
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[environments]
+local = ["local"]
+conda = ["conda"]
+
+[feature.conda.dependencies]
+rattler-build = "*"
+
+[feature.local.dependencies]
+python = "3.12.7"
+vswhere = "*"
+libboost-devel = "1.84"
+numpy = "1.26"
+pytest = "*"
+python-dotenv = "*"
+cmake = "*"
+swig = ">=4.1.1"
+ninja = "*"
+occt = "*"
+cgal-cpp = "*"
+hdf5 = "*"
+eigen = "*"
+mpfr = "*"
+nlohmann_json = "*"
+mpir = "*"
+zlib = "*"
+
+[feature.conda.tasks]
+cbuild = {cmd = ["rattler-build", "build","-r", "conda/recipe.yaml"] }
+ctest = {cmd = ["rattler-build", "test"]}
+
+[feature.local.tasks]
+update_submods = {cmd = ["git","submodule", "init", "&&", "git", "submodule", "update", "--recursive"] }
+build = { cmd = ["cmake", "--preset", "win-release", "-B", "build/win-release", "cmake"], description = "Build the project" }
+install = { cmd = ["ninja", "-C", "build/win-release", "install"], description = "Install the project" }
+
+[target.win-64.activation]
+scripts = ["cmake/activate.bat"]
