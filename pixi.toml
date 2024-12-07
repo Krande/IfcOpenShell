@@ -32,11 +32,11 @@ mpir = "*"
 zlib = "*"
 
 [feature.conda.tasks]
-cbuild = {cmd = ["rattler-build", "build","-r", "conda/recipe.yaml"] }
-ctest = {cmd = ["rattler-build", "test"]}
+cbuild = { cmd = ["rattler-build", "build", "-r", "conda/recipe.yaml"] }
+ctest = { cmd = ["rattler-build", "test"] }
 
 [feature.local.tasks]
-update_submods = {cmd = ["git","submodule", "init", "&&", "git", "submodule", "update", "--recursive"] }
+update_submodules = { cmd = ["git", "submodule", "init", "&&", "git", "submodule", "update", "--recursive", "&&", "cd", "src/svgfill", "&&", "git", "submodule", "init", "&&", "git", "submodule", "update", "--recursive"] }
 build = { cmd = ["cmake", "--preset", "win-release", "-B", "build/win-release", "cmake"], description = "Build the project" }
 install = { cmd = ["ninja", "-C", "build/win-release", "install"], description = "Install the project" }
 
