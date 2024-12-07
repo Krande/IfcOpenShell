@@ -15,7 +15,7 @@ rattler-build = "*"
 [feature.local.dependencies]
 python = "3.12.7"
 vswhere = "*"
-libboost-devel = "1.84"
+libboost-devel = "*"
 numpy = "1.26"
 pytest = "*"
 python-dotenv = "*"
