@@ -6,7 +6,9 @@ channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64"]
 
 [environments]
-common = { features=["common"], no-default-feature=true }
+common = { features = ["common"], no-default-feature = true }
+prod = { features = ["prod", "common"], no-default-feature = true }
+dev = { features = ["dev", "common"], no-default-feature = true }
 
 [feature.common.dependencies]
 # Build deps
@@ -19,7 +21,7 @@ cxx-compiler = "*"
 # Runtime deps
 python = "3.12.*"
 libboost-devel = "*"
-occt = "*"
+occt = { version = "*", build = "*novtk*" }
 cgal-cpp = "*"
 numpy = "*"
 lark = "*"
@@ -32,16 +34,21 @@ zlib = "*"
 
 
 [feature.common.target.win-64.dependencies]
-vs_win-64 = "*" # Visual Studio
-vswhere = "*" # Visual Studio
+vs2022_win-64 = "*"
+#vs_win-64 = "*" # Visual Studio
+#vswhere = "*" # Visual Studio
 
 
-[feature.common.target.win-64.tasks]
+[feature.prod.target.win-64.tasks]
 configure-release = { cmd = ["cmake", "--preset", "win-release", "-B", "build/win-release", "cmake"], description = "Configure the project" }
 build-release = { cmd = ["cmake", "--build", "build/win-release", "--config", "Release"], description = "Build the project" }
 
+[feature.dev.target.win-64.tasks]
 configure-debug = { cmd = ["cmake", "--preset", "win-debug", "-B", "build/win-debug", "cmake"], description = "Configure the project" }
 build-debug = { cmd = ["cmake", "--build", "build/win-debug", "--config", "Debug"], description = "Build the project" }
+install-debug = { cmd = ["cmake", "--install", "build/win-debug", "--config", "Debug"], description = "Install the project" }
+
+vsdebug = { cmd = ["python"], description = "Run a python script with vs debugger attached" }
 
 [feature.common.target.win-64.activation]
 #scripts = ["cmake/activate.bat"]

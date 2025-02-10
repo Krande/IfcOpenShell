@@ -30,19 +30,16 @@
       "hidden": true,
       "environment": {
         "CONDA_BUILD": "ON",
-        "PREFIX": "${sourceDir}/../.pixi/envs/common",
-        "LIBRARY_PREFIX": "${sourceDir}/../.pixi/envs/common/Library",
         "CONDA_PY": "312"
       },
       "cacheVariables": {
-        "BUILD_IFCPYTHON": "ON",
-        "BUILD_SHARED_LIBS": "ON",
+        "Boost_USE_STATIC_LIBS": "OFF",
         "CMAKE_INSTALL_PREFIX": "$env{LIBRARY_PREFIX}",
         "PYTHON_EXECUTABLE": "$env{PREFIX}/python.exe",
         "PYTHON_INCLUDE_DIR": "$env{PREFIX}/include",
         "PYTHON_LIBRARY": "$env{PREFIX}/libs/python$env{CONDA_PY}.lib",
         "CMAKE_FIND_ROOT_PATH": "$env{LIBRARY_PREFIX}",
-        "CMAKE_PREFIX_PATH": "$env{LIBRARY_PREFIX};$env{LIBRARY_PREFIX}/include;$env{LIBRARY_PREFIX}/lib;$env{LIBRARY_PREFIX}/bin",
+        "CMAKE_PREFIX_PATH": "$env{LIBRARY_PREFIX}",
         "LIBXML2_LIBRARIES": "$env{LIBRARY_PREFIX}/lib/libxml2.lib",
         "OCC_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include/opencascade",
         "OCC_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
@@ -52,7 +49,8 @@
         "GMP_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
         "GMP_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
         "MPFR_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
-        "Boost_USE_STATIC_LIBS": "OFF",
+        "Boost_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
+        "Boost_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
         "HDF5_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
         "HDF5_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
         "ZLIB_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include"
@@ -67,6 +65,10 @@
       "warnings": {
         "dev": false
       },
+      "environment": {
+        "PREFIX": "${sourceDir}/../.pixi/envs/prod",
+        "LIBRARY_PREFIX": "${sourceDir}/../.pixi/envs/prod/Library"
+      },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
@@ -79,6 +81,10 @@
       "hidden": false,
       "warnings": {
         "dev": false
+      },
+      "environment": {
+        "PREFIX": "${sourceDir}/../.pixi/envs/dev",
+        "LIBRARY_PREFIX": "${sourceDir}/../.pixi/envs/dev/Library"
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
