@@ -1,4 +1,7 @@
-mkdir build && cd build
+@echo off
+
+setlocal enabledelayedexpansion
+
 
 REM Remove dot from PY_VER for use in library name
 REM From https://github.com/tpaviot/pythonocc-core/blob/master/ci/conda/bld.bat
@@ -6,7 +9,11 @@ set MY_PY_VER=%PY_VER:.=%
 
 set LIBXML2="%LIBRARY_PREFIX%/lib/libxml2.lib"
 
-cmake -G "Ninja" ^
+echo "PREFIX: %PREFIX%"
+echo "LIBRARY_PREFIX: %LIBRARY_PREFIX%"
+echo "SRC_DIR: %SRC_DIR%"
+
+cmake -G "Ninja" -B "build" ^
  -D SCHEMA_VERSIONS="2x3;4;4x1;4x3_add2" ^
  -D CMAKE_BUILD_TYPE:STRING=Release ^
  -D CMAKE_INSTALL_PREFIX:FILEPATH="%LIBRARY_PREFIX%" ^
@@ -42,10 +49,12 @@ cmake -G "Ninja" ^
  -D Boost_INCLUDE_DIR:FILEPATH="%LIBRARY_PREFIX%\include" ^
  -D Boost_USE_STATIC_LIBS:BOOL=OFF ^
  -D CITYJSON_SUPPORT:BOOL=OFF ^
- ../cmake
- 
-if errorlevel 1 exit 1
-
-ninja install -j 1
+ -S "%SRC_DIR%/cmake"
 
 if errorlevel 1 exit 1
+
+ninja -C build install -j 1
+
+if errorlevel 1 exit 1
+
+endlocal
