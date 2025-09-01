@@ -11,6 +11,7 @@ prod = { features = ["prod", "common"], no-default-feature = true }
 dev = { features = ["dev", "common"], no-default-feature = true }
 lint = { features = ["lint"], no-default-feature = true }
 tests = { features = ["tests", "common"], no-default-feature = true }
+pyodide = { features = ["pyodide"], no-default-feature = true}
 
 [feature.lint.dependencies]
 ruff = "*"
@@ -53,8 +54,11 @@ networkx = "*"
 
 [feature.common.target.win-64.dependencies]
 vs2022_win-64 = "*"
-#vs_win-64 = "*" # Visual Studio
-#vswhere = "*" # Visual Studio
+
+[feature.pyodide.dependencies]
+pyodide-build = "*"
+emscripten = "*"
+pip = "*"
 
 [feature.common.tasks]
 init-submodules = { cmd = "git submodule update --init --recursive", outputs =["$PIXI_PROJECT_ROOT/src/svgfill/3rdparty/svgpp/*"]}
@@ -70,15 +74,22 @@ install-debug = { cmd = ["cmake", "--install", "build/win-debug", "--config", "D
 
 vsdebug = { cmd = ["python"], description = "Run a python script with vs debugger attached" }
 
-[feature.tests.tasks]
+[feature.tests.target.win-64.tasks]
 configure-test = { cmd = ["cmake", "--preset", "win-test", "-B", "build/win-test", "cmake"], description = "Configure the project", depends-on=[{ task="init-submodules", environment = "common" }], outputs=["build/win-test/CMakeCache.txt"] }
 build-test = { cmd = ["cmake", "--build", "build/win-test", "--config", "Release"], description = "Build the project", depends-on = ["configure-test"], outputs=["build/win-test/IfcGeom.lib"] }
 install-test = { cmd = ["cmake", "--install", "build/win-test", "--config", "Release"], description = "Install the project", depends-on = ["build-test"] } # Optionally Install files to your desired env using --prefix
 
 test = { cmd = "pytest .", cwd="src/ifcopenshell-python/test", depends-on=["install-test"], env = {PYTHONPATH="$PIXI_PROJECT_ROOT/src/ifcpatch"}}
 
+[feature.tests.target.linux-64.tasks]
+configure-test = { cmd = "cmake --preset unix-test -G Ninja -B build/unix-test cmake" , description = "Configure the project", depends-on=[{ task="init-submodules", environment = "common" }], outputs=["build/unix-test/CMakeCache.txt"] }
+build-test = { cmd = "cmake --build build/unix-test -j 2 --config Release", description = "Build the project", depends-on = ["configure-test"], outputs=["build/unix-test/IfcGeom.lib"] }
+install-test = { cmd = ["cmake", "--install", "build/unix-test", "--config", "Release"], description = "Install the project", depends-on = ["build-test"] } # Optionally Install files to your desired env using --prefix
+
+test = { cmd = "pytest .", cwd="src/ifcopenshell-python/test", depends-on=["install-test"], env = {PYTHONPATH="$PIXI_PROJECT_ROOT/src/ifcpatch"}}
+
 [feature.lint.tasks]
 lint = { cmd = "ruff check && black --diff --check ."}
 
-[feature.common.target.win-64.activation]
-#scripts = ["cmake/activate.bat"]
+[feature.pyodide.tasks]
+pyodide-build = { cmd="pyodide build", cwd = "pyodide" }
