@@ -1,4 +1,4 @@
-[project]
+[workspace]
 name = "IfcOpenShell"
 version = "0.8.4"
 description = "IfcOpenShell is a library to support the IFC file format"
@@ -37,6 +37,9 @@ mpfr = "*"
 gmp = "*"
 nlohmann_json = "*"
 zlib = "*"
+libxml2-devel = "*"
+rocksdb = "*"
+zstd-static = "*"
 # Not strictly necessary
 pythonocc-core = "*"
 
@@ -69,6 +72,10 @@ build-debug = { cmd = ["cmake", "--build", "build/win-debug", "--config", "Debug
 install-debug = { cmd = ["cmake", "--install", "build/win-debug", "--config", "Debug"], description = "Install the project" } # Optionally Install files to your desired env using --prefix
 
 vsdebug = { cmd = ["python"], description = "Run a python script with vs debugger attached" }
+
+[feature.prod.target.linux-64.tasks]
+configure-release = { cmd = ["cmake", "--preset", "linux-release", "-B", "build/linux-release", "cmake"], description = "Configure the project", depends-on=[{ task="init-submodules", environment = "common" }] }
+build-release = { cmd = ["cmake", "--build", "build/linux-release", "--config", "Release"],depends-on=["configure-release"], description = "Build the project" }
 
 [feature.tests.tasks]
 configure-test = { cmd = ["cmake", "--preset", "win-test", "-B", "build/win-test", "cmake"], description = "Configure the project", depends-on=[{ task="init-submodules", environment = "common" }], outputs=["build/win-test/CMakeCache.txt"] }
