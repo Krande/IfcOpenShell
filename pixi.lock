@@ -1099,6 +1099,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/binutils-2.44-h4852527_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/binutils_impl_linux-64-2.44-h4bf12b8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/binutils_linux-64-2.44-h4852527_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/blender-mathutils-3.3.0-py312h574c966_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-python-1.1.0-py312h2ec8cdc_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-h4bc722e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.34.5-hb9d3cd8_0.conda
@@ -1274,6 +1275,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-h3691f8a_5.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-static-1.5.7-hb9fe2ec_5.conda
       osx-64:
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/blender-mathutils-3.3.0-py312h80f7fa5_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/brotli-python-1.1.0-py312haafddd8_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/bzip2-1.0.8-hfdf4475_7.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/c-ares-1.34.5-hf13058a_0.conda
@@ -1433,6 +1435,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-static-1.5.7-h90468c6_5.conda
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/win-64/_openmp_mutex-4.5-2_gnu.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/blender-mathutils-3.3.0-py312h5247d40_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/brotli-python-1.1.0-py312h275cf98_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h2466b09_7.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/c-compiler-1.11.0-h528c1b4_0.conda
@@ -1711,6 +1714,45 @@ packages:
   license_family: MIT
   size: 393484
   timestamp: 1738616259890
+- conda: https://conda.anaconda.org/conda-forge/linux-64/blender-mathutils-3.3.0-py312h574c966_1.conda
+  sha256: 000fff0ccd833b1387de44a77a76a050035d9f018bdaab59b55f1cab6ebb709b
+  md5: aa7e3f3132b2ec51612e5b2b1551712f
+  depends:
+  - python
+  - libgcc >=14
+  - __glibc >=2.17,<3.0.a0
+  - python_abi 3.12.* *_cp312
+  license: GPL-2.0-or-later
+  license_family: GPL
+  size: 211939
+  timestamp: 1757400035806
+- conda: https://conda.anaconda.org/conda-forge/osx-64/blender-mathutils-3.3.0-py312h80f7fa5_1.conda
+  sha256: d4aa7a63299ebab3ba8298da675de8b17a499d5362793468b250b8e15b7477e3
+  md5: e2bc100bda0db29b662527e6a615a44b
+  depends:
+  - python
+  - __osx >=10.13
+  - python_abi 3.12.* *_cp312
+  license: GPL-2.0-or-later
+  license_family: GPL
+  size: 209342
+  timestamp: 1757400147154
+- conda: https://conda.anaconda.org/conda-forge/win-64/blender-mathutils-3.3.0-py312h5247d40_1.conda
+  sha256: 271bf305b8f7593364594a958ef20804f6abb68167cf0b196f639ce9a17895ac
+  md5: 2103cc06c61841ebd4117c70d1eab53f
+  depends:
+  - python
+  - vc >=14.3,<15
+  - vc14_runtime >=14.44.35208
+  - ucrt >=10.0.20348.0
+  - vc >=14.3,<15
+  - vc14_runtime >=14.44.35208
+  - ucrt >=10.0.20348.0
+  - python_abi 3.12.* *_cp312
+  license: GPL-2.0-or-later
+  license_family: GPL
+  size: 105218
+  timestamp: 1757400049843
 - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-python-1.1.0-py312h2ec8cdc_3.conda
   sha256: dc27c58dc717b456eee2d57d8bc71df3f562ee49368a2351103bc8f1b67da251
   md5: a32e0c069f6c3dcac635f7b0b0dac67e

@@ -53,6 +53,7 @@ xmlschema = "*"
 xsdata = "*"
 lxml = "*"
 networkx = "*"
+blender-mathutils = "*"
 
 [feature.common.target.win-64.dependencies]
 vs2022_win-64 = "*"

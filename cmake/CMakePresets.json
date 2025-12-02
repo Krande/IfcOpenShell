@@ -19,7 +19,9 @@
         "BUILD_SHARED_LIBS": "ON",
         "SCHEMA_VERSIONS": "2x3;4;4x3_add2",
         "CMAKE_GENERATOR_PLATFORM": "",
-        "CMAKE_GENERATOR_TOOLSET": ""
+        "CMAKE_GENERATOR_TOOLSET": "",
+        "WITH_ROCKSDB": "ON",
+        "WITH_ZSTD": "ON"
       }
     },
     {
@@ -143,9 +145,7 @@
         "Boost_INCLUDE_DIR": "$env{PREFIX}/include",
         "HDF5_INCLUDE_DIR": "$env{PREFIX}/include",
         "HDF5_LIBRARY_DIR": "$env{PREFIX}/lib",
-        "ZLIB_INCLUDE_DIR": "$env{PREFIX}/include",
-        "WITH_ROCKSDB": "ON",
-        "WITH_ZSTD": "ON"
+        "ZLIB_INCLUDE_DIR": "$env{PREFIX}/include"
       }
     },
     {
