@@ -38,7 +38,7 @@ gmp = "*"
 nlohmann_json = "*"
 zlib = "*"
 libxml2-devel = "*"
-rocksdb = "*"
+rocksdb = "<10.7.5" # Newer versions require c++20
 zstd-static = "*"
 # Not strictly necessary
 pythonocc-core = "*"
@@ -77,12 +77,20 @@ vsdebug = { cmd = ["python"], description = "Run a python script with vs debugge
 configure-release = { cmd = ["cmake", "--preset", "linux-release", "-B", "build/linux-release", "cmake"], description = "Configure the project", depends-on=[{ task="init-submodules", environment = "common" }] }
 build-release = { cmd = ["cmake", "--build", "build/linux-release", "--config", "Release"],depends-on=["configure-release"], description = "Build the project" }
 
-[feature.tests.tasks]
+[feature.tests.target.win-64.tasks]
 configure-test = { cmd = ["cmake", "--preset", "win-test", "-B", "build/win-test", "cmake"], description = "Configure the project", depends-on=[{ task="init-submodules", environment = "common" }], outputs=["build/win-test/CMakeCache.txt"] }
 build-test = { cmd = ["cmake", "--build", "build/win-test", "--config", "Release"], description = "Build the project", depends-on = ["configure-test"], outputs=["build/win-test/IfcGeom.lib"] }
 install-test = { cmd = ["cmake", "--install", "build/win-test", "--config", "Release"], description = "Install the project", depends-on = ["build-test"] } # Optionally Install files to your desired env using --prefix
 
 test = { cmd = "pytest .", cwd="src/ifcopenshell-python/test", depends-on=["install-test"], env = {PYTHONPATH="$PIXI_PROJECT_ROOT/src/ifcpatch"}}
+
+[feature.tests.target.linux-64.tasks]
+configure-test = { cmd = ["cmake", "--preset", "linux-test", "-B", "build/linux-test", "cmake"], description = "Configure the project", depends-on=[{ task="init-submodules", environment = "common" }], outputs=["build/linux-test/CMakeCache.txt"] }
+build-test = { cmd = ["cmake", "--build", "build/linux-test", "--config", "Release"], description = "Build the project", depends-on = ["configure-test"], outputs=["build/linux-test/IfcGeom.so"] }
+install-test = { cmd = ["cmake", "--install", "build/linux-test", "--config", "Release"], description = "Install the project", depends-on = ["build-test"] } # Optionally Install files to your desired env using --prefix
+
+test = { cmd = "pytest .", cwd="src/ifcopenshell-python/test", depends-on=["install-test"], env = {PYTHONPATH="$PIXI_PROJECT_ROOT/src/ifcpatch"}}
+
 
 [feature.lint.tasks]
 lint = { cmd = "ruff check && black --diff --check ."}

@@ -109,7 +109,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rapidjson-1.1.0.post20240409-hac33072_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.2-h8228510_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rhash-1.4.5-hb9d3cd8_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/rocksdb-10.7.5-h30f46f6_0_default.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/rocksdb-10.6.2-h13d676d_0_default.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/snappy-1.2.2-h03e3b7b_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/svgwrite-1.4.3-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/swig-4.3.0-heed6a68_0.conda
@@ -226,7 +226,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/rapidjson-1.1.0.post20240409-hf036a51_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/readline-8.2-h9e318b2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/rhash-1.4.5-ha44c9a9_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/rocksdb-10.7.5-hedaee69_0_default.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/rocksdb-10.6.2-h5fc20da_0_default.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/sigtool-0.1.3-h88f4db0_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/osx-64/snappy-1.2.2-h01f5ddf_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/svgwrite-1.4.3-pyhd8ed1ab_1.conda
@@ -314,7 +314,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/python_abi-3.12-5_cp312.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pythonocc-core-7.8.1.1-novtk_h94eb9d1_100.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/rapidjson-1.1.0.post20240409-he0c23c2_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/rocksdb-10.7.5-hb280c3f_0_default.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/rocksdb-10.6.2-h6b9cf66_0_default.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/snappy-1.2.2-h7fa0ca8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/svgwrite-1.4.3-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/swig-4.3.0-h51fbe9b_0.conda
@@ -447,7 +447,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rapidjson-1.1.0.post20240409-hac33072_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.2-h8228510_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rhash-1.4.5-hb9d3cd8_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/rocksdb-10.7.5-h30f46f6_0_default.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/rocksdb-10.6.2-h13d676d_0_default.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/snappy-1.2.2-h03e3b7b_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/svgwrite-1.4.3-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/swig-4.3.0-heed6a68_0.conda
@@ -564,7 +564,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/rapidjson-1.1.0.post20240409-hf036a51_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/readline-8.2-h9e318b2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/rhash-1.4.5-ha44c9a9_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/rocksdb-10.7.5-hedaee69_0_default.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/rocksdb-10.6.2-h5fc20da_0_default.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/sigtool-0.1.3-h88f4db0_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/osx-64/snappy-1.2.2-h01f5ddf_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/svgwrite-1.4.3-pyhd8ed1ab_1.conda
@@ -652,7 +652,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/python_abi-3.12-5_cp312.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pythonocc-core-7.8.1.1-novtk_h94eb9d1_100.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/rapidjson-1.1.0.post20240409-he0c23c2_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/rocksdb-10.7.5-hb280c3f_0_default.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/rocksdb-10.6.2-h6b9cf66_0_default.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/snappy-1.2.2-h7fa0ca8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/svgwrite-1.4.3-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/swig-4.3.0-h51fbe9b_0.conda
@@ -864,7 +864,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rapidjson-1.1.0.post20240409-hac33072_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.2-h8228510_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rhash-1.4.5-hb9d3cd8_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/rocksdb-10.7.5-h30f46f6_0_default.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/rocksdb-10.6.2-h13d676d_0_default.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/snappy-1.2.2-h03e3b7b_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/svgwrite-1.4.3-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/swig-4.3.0-heed6a68_0.conda
@@ -981,7 +981,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/rapidjson-1.1.0.post20240409-hf036a51_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/readline-8.2-h9e318b2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/rhash-1.4.5-ha44c9a9_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/rocksdb-10.7.5-hedaee69_0_default.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/rocksdb-10.6.2-h5fc20da_0_default.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/sigtool-0.1.3-h88f4db0_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/osx-64/snappy-1.2.2-h01f5ddf_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/svgwrite-1.4.3-pyhd8ed1ab_1.conda
@@ -1069,7 +1069,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/python_abi-3.12-5_cp312.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pythonocc-core-7.8.1.1-novtk_h94eb9d1_100.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/rapidjson-1.1.0.post20240409-he0c23c2_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/rocksdb-10.7.5-hb280c3f_0_default.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/rocksdb-10.6.2-h6b9cf66_0_default.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/snappy-1.2.2-h7fa0ca8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/svgwrite-1.4.3-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/swig-4.3.0-h51fbe9b_0.conda
@@ -1238,7 +1238,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.2-h8c095d6_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rhash-1.4.6-hb9d3cd8_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/rocksdb-10.7.5-h30f46f6_0_default.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/rocksdb-10.6.2-h13d676d_0_default.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ruff-0.12.10-h718f522_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/shapely-2.1.1-py312h21f5128_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
@@ -1404,7 +1404,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/readline-8.2-h7cca4af_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/rhash-1.4.6-h6e16a3a_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/rocksdb-10.7.5-hedaee69_0_default.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/rocksdb-10.6.2-h5fc20da_0_default.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/ruff-0.12.10-hab3cb23_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/shapely-2.1.1-py312hbf10b29_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/sigtool-0.1.3-h88f4db0_0.tar.bz2
@@ -1539,7 +1539,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/pythonocc-core-7.9.0-novtk_h94eb9d1_100.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/rapidjson-1.1.0.post20240409-he0c23c2_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/rocksdb-10.7.5-hb280c3f_0_default.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/rocksdb-10.6.2-h6b9cf66_0_default.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/ruff-0.12.10-h429b229_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/shapely-2.1.1-py312h3f81574_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
@@ -7872,9 +7872,9 @@ packages:
   purls: []
   size: 185180
   timestamp: 1748644989546
-- conda: https://conda.anaconda.org/conda-forge/linux-64/rocksdb-10.7.5-h30f46f6_0_default.conda
-  sha256: e10d8abdb728d1c57a4c667ac12db1d426b04f09f78b43239a5fdee24c6ede39
-  md5: b23d3acc85b4d3d853cd3890ba594c58
+- conda: https://conda.anaconda.org/conda-forge/linux-64/rocksdb-10.6.2-h13d676d_0_default.conda
+  sha256: 13b828417b82f77e2028cff5168f4302008d487268ae9a404ea296afb7c7bd9e
+  md5: 4d924c17b62d2bcc88d9187310b0974e
   depends:
   - __glibc >=2.17,<3.0.a0
   - bzip2 >=1.0.8,<2.0a0
@@ -7887,11 +7887,11 @@ packages:
   - zstd >=1.5.7,<1.6.0a0
   license: Apache-2.0
   license_family: APACHE
-  size: 11239315
-  timestamp: 1763279430518
-- conda: https://conda.anaconda.org/conda-forge/osx-64/rocksdb-10.7.5-hedaee69_0_default.conda
-  sha256: a90779f92c942373f096552057d4ff42e5690a59bd35d367fd835eef8586650f
-  md5: 2ae380070e189e4f59c95ecca73a86a8
+  size: 10425906
+  timestamp: 1761164568248
+- conda: https://conda.anaconda.org/conda-forge/osx-64/rocksdb-10.6.2-h5fc20da_0_default.conda
+  sha256: 056a3bf0ad483d3319a3949943523024f3f7197ca70c5bb01de0e88677b4fd31
+  md5: 149790e551256c6e4e5d5606710a67a9
   depends:
   - __osx >=10.14
   - bzip2 >=1.0.8,<2.0a0
@@ -7903,11 +7903,11 @@ packages:
   - zstd >=1.5.7,<1.6.0a0
   license: Apache-2.0
   license_family: APACHE
-  size: 7891303
-  timestamp: 1763279886132
-- conda: https://conda.anaconda.org/conda-forge/win-64/rocksdb-10.7.5-hb280c3f_0_default.conda
-  sha256: ab679959857ba64dcaf3b9569b7f541e56a875155c701e7e3f0abfe9a3f401fd
-  md5: c559c899486a917c8593f5a5762fbac9
+  size: 7829853
+  timestamp: 1761164812811
+- conda: https://conda.anaconda.org/conda-forge/win-64/rocksdb-10.6.2-h6b9cf66_0_default.conda
+  sha256: 2c9b207b20b88ba28e86a1bdae49e291dbe14dbf0c0276915910a0603a45e532
+  md5: 4e2dcb2ac158e83b4fbabbf700b626e7
   depends:
   - bzip2 >=1.0.8,<2.0a0
   - gflags >=2.2.2,<2.3.0a0
@@ -7920,8 +7920,8 @@ packages:
   - zstd >=1.5.7,<1.6.0a0
   license: Apache-2.0
   license_family: APACHE
-  size: 56367584
-  timestamp: 1763280437034
+  size: 54418605
+  timestamp: 1761165754119
 - conda: https://conda.anaconda.org/conda-forge/linux-64/ruff-0.12.10-h718f522_0.conda
   noarch: python
   sha256: f7cdb61d8e758d47500b6f45e6c2685a275ca65d1cb9c8bd094fcea227e8b318

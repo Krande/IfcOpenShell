@@ -180,6 +180,20 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
+    },
+    {
+      "name": "linux-test",
+      "inherits": [
+        "linux-shared"
+      ],
+      "hidden": false,
+      "binaryDir": "${sourceDir}/../build/linux-test",
+      "warnings": {
+        "dev": false
+      },
+      "environment": {
+        "PREFIX": "${sourceDir}/../.pixi/envs/tests"
+      }
     }
   ]
 }
