@@ -86,7 +86,7 @@ test = { cmd = "pytest .", cwd="src/ifcopenshell-python/test", depends-on=["inst
 
 [feature.tests.target.linux-64.tasks]
 configure-test = { cmd = ["cmake", "--preset", "linux-test", "-B", "build/linux-test", "cmake"], description = "Configure the project", depends-on=[{ task="init-submodules", environment = "common" }], outputs=["build/linux-test/CMakeCache.txt"] }
-build-test = { cmd = ["cmake", "--build", "build/linux-test", "--config", "Release"], description = "Build the project", depends-on = ["configure-test"], outputs=["build/linux-test/IfcGeom.so"] }
+build-test = { cmd = ["cmake", "--build", "build/linux-test", "--config", "Release", "-j", "6"], description = "Build the project", depends-on = ["configure-test"], outputs=["build/linux-test/ifcgeom/libIfcGeom.a"] }
 install-test = { cmd = ["cmake", "--install", "build/linux-test", "--config", "Release"], description = "Install the project", depends-on = ["build-test"] } # Optionally Install files to your desired env using --prefix
 
 test = { cmd = "pytest .", cwd="src/ifcopenshell-python/test", depends-on=["install-test"], env = {PYTHONPATH="$PIXI_PROJECT_ROOT/src/ifcpatch"}}
